@@ -1,0 +1,584 @@
+---
+title: "Using the Desktop Interface"
+description: "Navigate the OddsEngine PyQt application to access matches, analyze bets, and manage your betting analysis workflow"
+---
+
+## Overview
+
+OddsEngine's desktop application provides a comprehensive interface for analyzing tennis bets, calculating probabilities, and tracking your betting performance. This guide covers the main windows, navigation patterns, and essential workflows.
+
+## Application Layout
+
+### Main Window Components
+
+When you launch OddsEngine, you'll see the main window divided into key areas:
+
+<AccordionGroup>
+  <Accordion title="Menu Bar">
+    Located at the top of the window with menus:
+    - **File**: New analysis, open saved, export, preferences, quit
+    - **View**: Toggle panels, customize layout, themes
+    - **Tools**: Data refresh, mock provider toggle, database management
+    - **Help**: Documentation, about, check for updates
+  </Accordion>
+
+  <Accordion title="Toolbar">
+    Quick access buttons below the menu bar:
+    - **New Single Analysis**: Analyze an individual bet
+    - **New Combined Bet**: Create multi-match combination
+    - **Refresh Data**: Update match data from API
+    - **Saved Analyses**: View historical analyses
+    - **Settings**: Configure application preferences
+  </Accordion>
+
+  <Accordion title="Left Sidebar">
+    Navigation panel with main sections:
+    - **Upcoming Matches**: List of future ATP/WTA matches
+    - **Saved Analyses**: Your stored bet analyses
+    - **Combined Bets**: Multi-match combinations
+    - **History**: Past analyses and results
+    - **Data Sources**: API status and configuration
+  </Accordion>
+
+  <Accordion title="Central Content Area">
+    Main working space that changes based on your current task:
+    - Match selection lists
+    - Probability calculation displays
+    - Analysis detail views
+    - Comparison tables
+  </Accordion>
+
+  <Accordion title="Right Panel (Context Panel)">
+    Shows additional details for selected items:
+    - Match information and statistics
+    - Player profiles and recent form
+    - Probability breakdown factors
+    - Notes and annotations
+  </Accordion>
+
+  <Accordion title="Status Bar">
+    Bottom bar displaying:
+    - API connection status (Connected/Disconnected/Mock Mode)
+    - Last data refresh timestamp
+    - Database connection status
+    - Quick stats (total saved analyses, etc.)
+  </Accordion>
+</AccordionGroup>
+
+## Getting Started Workflow
+
+<Steps>
+  <Step title="Launch the application">
+    Run the OddsEngine desktop application from your system launcher or command line:
+    
+    ```bash
+    python -m oddsengine.app
+    ```
+    
+    The application initializes and connects to the Tennis API.
+  </Step>
+
+  <Step title="Check data connection">
+    Look at the status bar (bottom of window):
+    - **Green indicator**: Connected to API-Tennis.com
+    - **Yellow indicator**: Using cached data
+    - **Orange indicator**: Mock provider active (fallback mode)
+    
+    If needed, click **Refresh Data** to update match information.
+  </Step>
+
+  <Step title="Browse upcoming matches">
+    The **Upcoming Matches** section in the left sidebar shows:
+    - Matches organized by date
+    - Tournament names and rounds
+    - Player names and rankings
+    
+    Expand date groups to see all matches scheduled.
+  </Step>
+
+  <Step title="Select your first match to analyze">
+    Click any match in the upcoming list. The central area displays:
+    - Detailed match information
+    - Probability calculations
+    - Statistical factors
+    
+    The right panel shows player profiles and recent performance.
+  </Step>
+</Steps>
+
+## Key Features and Navigation
+
+### Analyzing Individual Matches
+
+<Steps>
+  <Step title="Select a match from Upcoming Matches">
+    Click on a match in the left sidebar or use **File > New Analysis** to open the match selector.
+  </Step>
+
+  <Step title="Review the probability display">
+    The central panel shows:
+    - Win probabilities for each player (large percentages)
+    - Confidence level indicator (High/Medium/Low)
+    - Data completeness bar
+    
+    Click **Show Details** to expand statistical factors.
+  </Step>
+
+  <Step title="Examine contributing factors">
+    Scroll through the factors list:
+    - Head-to-head record
+    - Current form (last 10 matches)
+    - Surface performance
+    - Tournament level performance
+    
+    Each factor shows its contribution weight to the final probability.
+  </Step>
+
+  <Step title="Add notes and save">
+    Use the **Notes** field in the right panel to document:
+    - External factors (injuries, motivation)
+    - Your confidence adjustments
+    - Betting decision rationale
+    
+    Click **Save Analysis** to store in your database.
+  </Step>
+</Steps>
+
+### Creating Combined Bets
+
+<Steps>
+  <Step title="Start a new combination">
+    Click **New Combined Bet** in the toolbar or press `Ctrl+N`.
+  </Step>
+
+  <Step title="Add matches to your combination">
+    Click **Add Match** to open the match selector:
+    - Browse by date, tournament, or search player names
+    - Select the match and choose which player you predict will win
+    - Click **Add to Combination**
+    
+    Repeat for all matches you want to include (minimum 2).
+  </Step>
+
+  <Step title="Review combined probability">
+    The central panel displays:
+    - List of all selected matches with individual probabilities
+    - Combined probability (large percentage at top)
+    - Risk assessment badge (Conservative/Moderate/Aggressive/High Risk)
+    
+    The right panel shows expected value analysis.
+  </Step>
+
+  <Step title="Optimize if needed">
+    Use the optimization tools:
+    - Hover over matches to see impact of removal
+    - Click **Remove** on weak matches to improve probability
+    - Click **Suggest Alternatives** for match replacement recommendations
+    
+    The combined probability updates in real-time.
+  </Step>
+
+  <Step title="Save your combined bet">
+    Click **Save Combined Bet** and optionally add:
+    - Stake amount
+    - Bookmaker odds
+    - Notes on your strategy
+  </Step>
+</Steps>
+
+## Managing Saved Analyses
+
+### Viewing Analysis History
+
+Click **Saved Analyses** in the left sidebar to see all stored analyses:
+
+- **List View**: Sortable table with date, matches, probability, result status
+- **Grid View**: Card-based layout with visual probability indicators
+- **Timeline View**: Chronological display of your analysis history
+
+Switch views using the icons in the top-right of the content area.
+
+### Filtering and Searching
+
+Use the filter toolbar above the analysis list:
+
+<AccordionGroup>
+  <Accordion title="Date Range Filter">
+    Select start and end dates to show analyses from specific time periods.
+  </Accordion>
+
+  <Accordion title="Result Filter">
+    Filter by outcome:
+    - **All**: Show all analyses
+    - **Pending**: Matches not yet played
+    - **Won**: Successful predictions
+    - **Lost**: Incorrect predictions
+  </Accordion>
+
+  <Accordion title="Type Filter">
+    Show specific analysis types:
+    - **Single Bets**: Individual match analyses
+    - **Combined Bets**: Multi-match combinations
+  </Accordion>
+
+  <Accordion title="Search">
+    Enter player names, tournament names, or note keywords to find specific analyses.
+  </Accordion>
+</AccordionGroup>
+
+### Comparing Multiple Analyses
+
+<Steps>
+  <Step title="Select analyses to compare">
+    In the **Saved Analyses** view:
+    - Hold `Ctrl` (Windows/Linux) or `Cmd` (Mac) and click multiple analyses
+    - Or click the checkbox on each analysis you want to compare
+  </Step>
+
+  <Step title="Open comparison view">
+    Click **Compare Selected** button in the toolbar.
+  </Step>
+
+  <Step title="Review side-by-side comparison">
+    The comparison table shows:
+    - Match details for each analysis
+    - Individual or combined probabilities
+    - Actual results (if matches completed)
+    - Your notes and reasoning
+    
+    Sort by any column to identify patterns or best performers.
+  </Step>
+</Steps>
+
+## Data Management
+
+### Refreshing Match Data
+
+OddsEngine automatically refreshes data every 6 hours, but you can manually update:
+
+<Steps>
+  <Step title="Click Refresh Data in toolbar">
+    Or select **Tools > Refresh Match Data** from the menu.
+  </Step>
+
+  <Step title="Monitor refresh progress">
+    A progress bar appears in the status bar showing:
+    - Matches being updated
+    - API calls remaining (if applicable)
+    - Estimated completion time
+  </Step>
+
+  <Step title="Review updated matches">
+    After refresh completes:
+    - New matches appear in **Upcoming Matches**
+    - Completed matches move to history
+    - Updated odds and statistics reflect latest data
+  </Step>
+</Steps>
+
+<Note>
+  If you exceed API rate limits (1,000 requests/month on free tier), OddsEngine automatically switches to **Mock Provider** mode using cached historical data.
+</Note>
+
+### Understanding API Status
+
+The status bar shows current data source:
+
+| Status | Icon | Meaning |
+|--------|------|--------|
+| **Connected** | 🟢 Green | Live data from API-Tennis.com |
+| **Cached** | 🟡 Yellow | Using recently cached data (within 24 hours) |
+| **Mock Mode** | 🟠 Orange | Using mock provider (historical data fallback) |
+| **Error** | 🔴 Red | Connection failed, click for details |
+
+Click the status indicator to view:
+- Last successful refresh timestamp
+- API requests remaining this month
+- Data freshness for each tournament
+- Option to force refresh or switch to mock mode
+
+## Customizing the Interface
+
+### Themes and Appearance
+
+Navigate to **View > Themes** to choose:
+
+- **Light Theme**: Default bright interface
+- **Dark Theme**: Dark mode for reduced eye strain
+- **System Default**: Matches your operating system theme
+
+### Layout Customization
+
+<Steps>
+  <Step title="Toggle panel visibility">
+    Use **View** menu to show/hide:
+    - Left Sidebar
+    - Right Context Panel
+    - Status Bar
+    
+    Create more screen space for the central content area.
+  </Step>
+
+  <Step title="Resize panels">
+    Hover over panel borders until cursor changes to resize icon, then click and drag to adjust width/height.
+  </Step>
+
+  <Step title="Save layout">
+    After arranging panels, select **View > Save Layout** to preserve your configuration.
+  </Step>
+</Steps>
+
+### Preferences and Settings
+
+Click **Settings** toolbar button or **File > Preferences** to configure:
+
+<AccordionGroup>
+  <Accordion title="General">
+    - Default view on startup (Upcoming Matches, Saved Analyses, Dashboard)
+    - Auto-refresh interval (1-24 hours)
+    - Language selection
+  </Accordion>
+
+  <Accordion title="Data Sources">
+    - API-Tennis.com API key
+    - Mock provider data directory
+    - Database connection settings
+    - Cache duration preferences
+  </Accordion>
+
+  <Accordion title="Analysis Defaults">
+    - Default confidence level filter
+    - Minimum probability thresholds
+    - Combined bet maximum matches
+    - Risk assessment preferences
+  </Accordion>
+
+  <Accordion title="Display">
+    - Theme selection
+    - Font size
+    - Probability display format (percentage, decimal, fraction)
+    - Date and time format
+  </Accordion>
+
+  <Accordion title="Notifications">
+    - Alert when matches complete
+    - Notify on data refresh errors
+    - Show tips and hints
+  </Accordion>
+</AccordionGroup>
+
+Click **Apply** to save changes or **Cancel** to discard.
+
+## Keyboard Shortcuts
+
+Speed up your workflow with keyboard shortcuts:
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+N` | New combined bet |
+| `Ctrl+S` | Save current analysis |
+| `Ctrl+R` | Refresh match data |
+| `Ctrl+F` | Focus search box |
+| `Ctrl+H` | Open saved analyses |
+| `Ctrl+,` | Open preferences/settings |
+| `F5` | Refresh current view |
+| `Escape` | Close current dialog/panel |
+| `Ctrl+W` | Close current tab |
+| `Ctrl+Q` | Quit application |
+
+<Tip>
+  View all shortcuts by pressing `F1` or selecting **Help > Keyboard Shortcuts**.
+</Tip>
+
+## Common Workflows
+
+### Daily Analysis Routine
+
+<Steps>
+  <Step title="Morning: Check upcoming matches">
+    - Launch OddsEngine
+    - Click **Refresh Data** to get latest matches
+    - Browse **Upcoming Matches** for today and upcoming days
+  </Step>
+
+  <Step title="Analyze promising opportunities">
+    - Select matches with favorable probabilities
+    - Review statistical factors and confidence levels
+    - Save analyses with notes on your reasoning
+  </Step>
+
+  <Step title="Build combined bets if desired">
+    - Create 2-3 combined bet scenarios
+    - Compare risk vs. potential return
+    - Save best options for later review
+  </Step>
+
+  <Step title="Evening: Review and place bets">
+    - Open **Saved Analyses** for the day
+    - Compare all options using comparison view
+    - Make final decisions based on latest information
+  </Step>
+
+  <Step title="Post-match: Track results">
+    - OddsEngine automatically updates completed matches
+    - Review accuracy in **History** section
+    - Note patterns in successful vs unsuccessful analyses
+  </Step>
+</Steps>
+
+### Weekly Performance Review
+
+Once per week, assess your betting analysis performance:
+
+<Steps>
+  <Step title="Open analysis history">
+    Navigate to **Saved Analyses** and set date filter to last 7 days.
+  </Step>
+
+  <Step title="Calculate success rate">
+    The summary panel shows:
+    - Total analyses performed
+    - Win rate (% of correct predictions)
+    - Combined bet success rate
+    - Average probability of analyzed bets
+  </Step>
+
+  <Step title="Identify patterns">
+    Look for:
+    - Which probability ranges perform best
+    - Surface types where predictions are more accurate
+    - Tournament levels with higher success rates
+  </Step>
+
+  <Step title="Adjust strategy">
+    Based on results:
+    - Raise or lower probability thresholds
+    - Focus on tournament types with better accuracy
+    - Refine combined bet size preferences
+  </Step>
+</Steps>
+
+### Exporting Data
+
+Share or archive your analysis data:
+
+<Steps>
+  <Step title="Select analyses to export">
+    In **Saved Analyses**, select one or more entries (or use **Select All**).
+  </Step>
+
+  <Step title="Choose export format">
+    Click **File > Export** and select:
+    - **PDF Report**: Formatted document with all analysis details
+    - **CSV File**: Spreadsheet-compatible data for further analysis
+    - **JSON**: Raw data for programmatic processing
+  </Step>
+
+  <Step title="Configure export options">
+    Choose what to include:
+    - Match details
+    - Probability calculations
+    - Statistical factors
+    - Notes and annotations
+    - Results (for completed matches)
+  </Step>
+
+  <Step title="Save exported file">
+    Select destination folder and filename, then click **Save**.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Application won't launch">
+    **Symptoms**: Double-clicking doesn't start OddsEngine or shows error message.
+    
+    **Solutions**:
+    - Verify Python 3.10+ is installed: `python --version`
+    - Check PyQt is installed: `pip show PyQt5` or `pip show PyQt6`
+    - Run from command line to see error messages: `python -m oddsengine.app`
+    - Check logs in `~/.oddsengine/logs/application.log`
+  </Accordion>
+
+  <Accordion title="No matches showing">
+    **Symptoms**: Upcoming Matches list is empty or shows old data.
+    
+    **Solutions**:
+    - Click **Refresh Data** button
+    - Check API status in status bar (should be green or yellow)
+    - Verify internet connection
+    - Check API key in **Settings > Data Sources**
+    - Enable Mock Provider if API is unavailable: **Tools > Enable Mock Provider**
+  </Accordion>
+
+  <Accordion title="Probabilities seem incorrect">
+    **Symptoms**: Calculated probabilities don't match expectations.
+    
+    **Solutions**:
+    - Click **Show Details** to review contributing factors
+    - Check confidence level (Low confidence may indicate data issues)
+    - Verify match details are correct (players, tournament, surface)
+    - Ensure data is fresh (refresh if older than 24 hours)
+    - Remember: OddsEngine uses statistical models, not guarantees
+  </Accordion>
+
+  <Accordion title="Can't save analyses">
+    **Symptoms**: Save button grayed out or error when clicking Save.
+    
+    **Solutions**:
+    - Check database connection in status bar
+    - Verify database settings in **Settings > Data Sources**
+    - Ensure write permissions to database directory
+    - Check disk space availability
+    - Review database logs: `~/.oddsengine/logs/database.log`
+  </Accordion>
+
+  <Accordion title="Interface is slow or unresponsive">
+    **Symptoms**: Clicking buttons delays, window hangs, or stutters.
+    
+    **Solutions**:
+    - Close unused tabs and panels
+    - Clear analysis history: **Tools > Clear Old Analyses**
+    - Reduce auto-refresh frequency in Settings
+    - Check system resources (CPU, memory)
+    - Restart application
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  If problems persist after trying these solutions, check the GitHub issues page or create a new issue with details about your problem and system configuration.
+</Warning>
+
+## Getting Help
+
+### In-Application Help
+
+- Press `F1` to open context-sensitive help
+- Hover over any button or field for tooltip explanations
+- Click **Help > Documentation** to open this guide
+- Select **Help > Tutorial** for interactive walkthrough
+
+### External Resources
+
+<CardGroup cols={2}>
+  <Card title="Documentation" icon="book" href="/introduction">
+    Browse complete OddsEngine documentation
+  </Card>
+
+  <Card title="GitHub Repository" icon="github" href="https://github.com/puj-course/FIS_2610_3517_G2">
+    Report issues or contribute to the project
+  </Card>
+
+  <Card title="Core Concepts" icon="lightbulb" href="/concepts/probability-engine">
+    Understand how probability calculations work
+  </Card>
+
+  <Card title="API Integration" icon="plug" href="/integration/api-setup">
+    Configure data sources and API connections
+  </Card>
+</CardGroup>
+
+<Tip>
+  Check **Help > About** to verify your OddsEngine version and see what's new in the latest release.
+</Tip>

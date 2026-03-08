@@ -1,0 +1,362 @@
+---
+title: SCRUM Workflow
+description: SCRUM methodology and agile practices for OddsEngine development
+---
+
+OddsEngine follows the SCRUM framework to ensure organized, iterative development with clear roles and ceremonies.
+
+## Team Roles
+
+Our team operates with clearly defined SCRUM roles to maintain agile development practices:
+
+<CardGroup cols={2}>
+  <Card title="Scrum Master / QA Lead" icon="user-shield">
+    **David Orjuela** ([@Kerosene21](https://github.com/Kerosene21))
+    
+    - Plans and organizes Sprints
+    - Coordinates SCRUM ceremonies
+    - Manages impediments and blockers
+    - Quality assurance and functional validation
+  </Card>
+  
+  <Card title="Product Owner / Scrum Master" icon="user-tie">
+    **Juan Pablo Álvarez** ([@Sleppyhed](https://github.com/Sleppyhed))
+    
+    - Defines and prioritizes user stories
+    - Manages Product Backlog
+    - Validates functional deliverables
+    - Oversees backend development
+  </Card>
+  
+  <Card title="Sprint Planner / Configuration Manager" icon="code-branch">
+    **Nicolás Sánchez** ([@nicosanlucon](https://github.com/nicosanlucon))
+    
+    - Organizes Sprint Backlog
+    - Manages GitHub repository
+    - Version control and branch management
+    - Frontend development support
+  </Card>
+  
+  <Card title="Documentation Lead / Frontend Developer" icon="file-code">
+    **Lucas Rincón** ([@Lcks07](https://github.com/Lcks07))
+    
+    - Develops frontend interface
+    - Technical and functional documentation
+    - System implementation support
+  </Card>
+</CardGroup>
+
+## Sprint Structure
+
+We follow standard SCRUM sprint cycles with regular ceremonies and deliverables.
+
+### Sprint Duration
+
+- **Length**: 2 weeks per sprint
+- **Velocity**: Adjusted based on team capacity and academic schedule
+- **Goal**: Deliver incremental, testable features each sprint
+
+## SCRUM Ceremonies
+
+<Steps>
+  <Step title="Sprint Planning">
+    **When**: Start of each sprint
+    
+    **Participants**: All team members
+    
+    **Duration**: 2 hours
+    
+    **Activities**:
+    - Product Owner presents prioritized backlog items
+    - Team estimates effort using story points
+    - Sprint goal is defined
+    - Sprint Backlog is created with committed items
+    - Tasks are broken down and assigned
+    
+    **Outcome**: Sprint Backlog with clear goals and assignments
+  </Step>
+  
+  <Step title="Daily Standup">
+    **When**: Daily (typically mornings)
+    
+    **Participants**: Development team + Scrum Master
+    
+    **Duration**: 15 minutes max
+    
+    **Format**: Each member answers:
+    1. What did I complete yesterday?
+    2. What will I work on today?
+    3. Are there any blockers?
+    
+    **Outcome**: Team alignment, impediment identification
+  </Step>
+  
+  <Step title="Sprint Review">
+    **When**: End of sprint
+    
+    **Participants**: All team members + stakeholders (professor)
+    
+    **Duration**: 1 hour
+    
+    **Activities**:
+    - Demo completed features
+    - Product Owner reviews acceptance criteria
+    - Gather feedback from stakeholders
+    - Update Product Backlog based on feedback
+    
+    **Outcome**: Validated increment, updated backlog
+  </Step>
+  
+  <Step title="Sprint Retrospective">
+    **When**: After Sprint Review
+    
+    **Participants**: Development team + Scrum Master
+    
+    **Duration**: 45 minutes
+    
+    **Activities**:
+    - Discuss what went well
+    - Identify areas for improvement
+    - Create action items for next sprint
+    - Review previous retrospective actions
+    
+    **Outcome**: Continuous improvement plan
+  </Step>
+</Steps>
+
+## Backlog Management
+
+### Product Backlog
+
+The Product Owner maintains a prioritized list of features and requirements:
+
+<Tabs>
+  <Tab title="Structure">
+    - **User Stories**: Feature descriptions from user perspective
+    - **Technical Tasks**: Infrastructure and architecture work
+    - **Bugs**: Defects requiring fixes
+    - **Spikes**: Research or investigation tasks
+  </Tab>
+  
+  <Tab title="Prioritization">
+    Items are prioritized based on:
+    - Business value and user impact
+    - Technical dependencies
+    - Risk and complexity
+    - Academic deadlines and course requirements
+  </Tab>
+  
+  <Tab title="Refinement">
+    Regular backlog grooming sessions:
+    - Clarify requirements
+    - Break down large stories
+    - Estimate effort
+    - Update priorities
+  </Tab>
+</Tabs>
+
+### Sprint Backlog
+
+Items committed for the current sprint:
+
+- Pulled from Product Backlog during Sprint Planning
+- Broken into concrete tasks
+- Tracked on GitHub Project Board
+- Updated daily during development
+
+**Columns**:
+1. **To Do**: Not started
+2. **In Progress**: Actively being worked on
+3. **Review**: Code review or QA testing
+4. **Done**: Meets Definition of Done
+
+## User Story Format
+
+We use standard user story format for backlog items:
+
+```
+As a [user type]
+I want to [action]
+So that [benefit]
+
+Acceptance Criteria:
+- [ ] Criterion 1
+- [ ] Criterion 2
+- [ ] Criterion 3
+
+Estimate: [story points]
+```
+
+**Example**:
+```
+As a tennis betting analyst
+I want to enter multiple bet selections
+So that I can see the combined probability of all bets succeeding
+
+Acceptance Criteria:
+- [ ] UI allows adding multiple bet selections
+- [ ] System calculates combined probability
+- [ ] Results display percentage with 2 decimal precision
+- [ ] Clear button resets all selections
+
+Estimate: 5 points
+```
+
+## Definition of Done
+
+For a task to be considered complete, it must meet:
+
+<AccordionGroup>
+  <Accordion title="Code Quality">
+    - Code follows PEP 8 style guidelines
+    - All functions have docstrings
+    - No linting errors
+    - Code reviewed by at least one team member
+  </Accordion>
+  
+  <Accordion title="Testing">
+    - Unit tests written and passing
+    - Integration tests pass
+    - Manual testing completed
+    - Edge cases verified
+  </Accordion>
+  
+  <Accordion title="Documentation">
+    - Technical documentation updated
+    - README updated if needed
+    - Code comments for complex logic
+    - Wiki pages updated
+  </Accordion>
+  
+  <Accordion title="Integration">
+    - Code merged to develop branch
+    - CI/CD pipeline passes
+    - No breaking changes to existing features
+    - Deployable state maintained
+  </Accordion>
+</AccordionGroup>
+
+## Sprint Workflow
+
+<Steps>
+  <Step title="Sprint Start">
+    - Sprint Planning meeting
+    - Sprint goal communicated
+    - GitHub Project Board updated
+    - Branches created from `develop`
+  </Step>
+  
+  <Step title="Development Phase">
+    - Daily standups
+    - Feature development
+    - Regular commits and pushes
+    - Continuous integration checks
+    - Code reviews
+  </Step>
+  
+  <Step title="Testing & QA">
+    - QA Lead validates features
+    - Bug fixes and adjustments
+    - Integration testing
+    - Documentation updates
+  </Step>
+  
+  <Step title="Sprint End">
+    - Merge to `develop`
+    - Sprint Review demo
+    - Sprint Retrospective
+    - Update metrics and velocity
+  </Step>
+</Steps>
+
+## Tracking Progress
+
+### GitHub Project Board
+
+We use GitHub Projects to visualize sprint progress:
+
+- **Issues**: Link to user stories and tasks
+- **Pull Requests**: Track code review status
+- **Labels**: Categorize work (feature, bug, documentation)
+- **Milestones**: Group work by sprint
+
+### Burndown Chart
+
+Tracking remaining work throughout the sprint:
+
+- X-axis: Days in sprint
+- Y-axis: Story points remaining
+- Ideal: Linear decrease to zero
+- Actual: Tracks real progress
+
+### Velocity Tracking
+
+Measure team productivity:
+
+- Story points completed per sprint
+- Average over last 3 sprints
+- Used for capacity planning
+- Adjusted for team availability
+
+## Handling Impediments
+
+When blockers arise:
+
+1. **Raise in Daily Standup**: Communicate immediately
+2. **Scrum Master Action**: Works to remove blocker
+3. **Escalate if Needed**: Involve Product Owner or professor
+4. **Document Resolution**: Track for future reference
+
+**Common Impediments**:
+- API access issues
+- Environment setup problems
+- Unclear requirements
+- Technical dependencies
+- Academic schedule conflicts
+
+## Agile Principles
+
+Our team follows these core agile values:
+
+<CardGroup cols={2}>
+  <Card title="Individuals and Interactions" icon="users">
+    Team collaboration over rigid processes
+  </Card>
+  
+  <Card title="Working Software" icon="laptop-code">
+    Functional increments over comprehensive documentation
+  </Card>
+  
+  <Card title="Customer Collaboration" icon="handshake">
+    Regular feedback over fixed requirements
+  </Card>
+  
+  <Card title="Responding to Change" icon="arrows-rotate">
+    Adaptability over following a plan
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<Warning>
+  **Sprint Commitment**: Only commit to work the team can realistically complete. Under-promise and over-deliver.
+</Warning>
+
+<Tip>
+  **Small Increments**: Break large features into smaller, testable chunks that can be completed within a sprint.
+</Tip>
+
+<Note>
+  **Academic Context**: Remember that this is an academic project. Balance agile principles with course requirements and deadlines.
+</Note>
+
+## Resources
+
+- [GitHub Project Board](https://github.com/nicosanlucon/OddsEngine/projects)
+- [Sprint Planning Template](https://github.com/nicosanlucon/OddsEngine/wiki/Sprint-Planning)
+- [Retrospective Notes](https://github.com/nicosanlucon/OddsEngine/wiki/Retrospectives)
+- [Velocity Tracking](https://github.com/nicosanlucon/OddsEngine/wiki/Velocity)
+
+---
+
+**Academic Context**: This SCRUM workflow is implemented as part of the Fundamentos de Ingeniería de Software course at Pontificia Universidad Javeriana (2026).

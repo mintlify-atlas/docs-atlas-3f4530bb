@@ -1,0 +1,297 @@
+---
+title: "System Architecture"
+description: "Understanding OddsEngine's architectural design and component interaction"
+icon: "sitemap"
+---
+
+## Overview
+
+OddsEngine is built as a **modular, layered architecture** that separates concerns between data presentation, business logic, external data integration, and persistence. This design enables independent development and testing of each layer while maintaining clear boundaries and responsibilities.
+
+<Tip>
+The architecture prioritizes **asynchronous data processing** and **non-blocking I/O** to handle real-time tennis data efficiently, even under high load or slow external API responses.
+</Tip>
+
+## Architectural Layers
+
+### 1. Presentation Layer (Frontend)
+
+**Technology**: PyQt
+
+The desktop interface is built using PyQt, providing a native application experience for users analyzing tennis betting probabilities. PyQt was chosen over web frameworks because:
+
+- **Performance**: Direct rendering without browser overhead
+- **Desktop integration**: Native OS features and file system access
+- **Rapid prototyping**: Qt Designer enables quick UI iteration
+- **Academic context**: Aligns with Python-first technology stack
+
+The presentation layer communicates with the backend through RESTful API calls, maintaining complete separation from business logic.
+
+```python
+# Example: Frontend making async API call to backend
+import httpx
+
+async def fetch_player_stats(player_id: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"http://localhost:8000/api/players/{player_id}")
+        return response.json()
+```
+
+### 2. Application Layer (Backend)
+
+**Technology**: Python + FastAPI + Uvicorn
+
+The backend serves as the orchestration layer, handling:
+
+- **RESTful API endpoints** for frontend communication
+- **Asynchronous request handling** via FastAPI's async/await support
+- **Business logic routing** to the probability engine
+- **Data transformation** between external APIs and internal models
+
+```python
+# src/main/python/api/routes/players.py
+from fastapi import APIRouter, HTTPException
+from services.tennis_api_client import get_player_data
+
+router = APIRouter(prefix="/api/players")
+
+@router.get("/{player_id}")
+async def get_player(player_id: str):
+    """Fetch player statistics from external API"""
+    try:
+        data = await get_player_data(player_id)
+        return {"player": data, "status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+```
+
+**Why FastAPI?**
+- Native async/await support for non-blocking I/O
+- Automatic API documentation (OpenAPI/Swagger)
+- Type validation with Pydantic models
+- Production-ready with Uvicorn ASGI server
+
+### 3. API Integration Layer
+
+**Technology**: HTTPX (async HTTP client)
+
+This layer manages all external data sources, primarily the **API-Tennis** service. HTTPX provides:
+
+- **Async HTTP calls** that don't block the FastAPI event loop
+- **Connection pooling** for efficient resource usage
+- **Timeout handling** and retry logic
+- **Fallback to mock data** when external APIs are unavailable
+
+```python
+# src/main/python/services/tennis_api_client.py
+import httpx
+from typing import Optional
+
+class TennisAPIClient:
+    def __init__(self, base_url: str, api_key: str):
+        self.base_url = base_url
+        self.api_key = api_key
+        
+    async def fetch_match_data(self, match_id: str) -> dict:
+        """Fetch match data with automatic fallback to mock provider"""
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                response = await client.get(
+                    f"{self.base_url}/matches/{match_id}",
+                    headers={"X-API-Key": self.api_key}
+                )
+                response.raise_for_status()
+                return response.json()
+            except (httpx.HTTPError, httpx.TimeoutException):
+                # Fallback to mock data provider
+                return await self._get_mock_data(match_id)
+```
+
+<Note>
+**API Selection Rationale**: API-Tennis was selected over RapidAPI and other providers because of its tennis specialization, clean JSON responses optimized for async processing, and alignment with FastAPI/HTTPX architecture. See `docs/research/tennis_api_selection.md` for the complete evaluation.
+</Note>
+
+### 4. Probability Engine
+
+**Technology**: Python + Pandas
+
+The core analytical component that performs:
+
+- **Statistical analysis** of historical match data
+- **Probability calculations** for individual and combined bets
+- **Data aggregation** using Pandas DataFrames
+- **Model evaluation** and confidence scoring
+
+```python
+# src/main/python/engine/probability_calculator.py
+import pandas as pd
+from typing import List, Tuple
+
+class ProbabilityEngine:
+    def calculate_combined_probability(self, bets: List[dict]) -> dict:
+        """
+        Calculate combined probability for multiple bets.
+        Uses multiplication rule for independent events.
+        """
+        probabilities = [bet['probability'] for bet in bets]
+        combined = pd.Series(probabilities).prod()
+        
+        return {
+            "individual_probabilities": probabilities,
+            "combined_probability": float(combined),
+            "confidence_score": self._calculate_confidence(bets)
+        }
+```
+
+**Why Pandas?**
+- Efficient handling of tabular tennis statistics
+- Built-in statistical functions for probability analysis
+- Integration with Jupyter notebooks for research/exploration
+- Industry-standard for data science workflows
+
+### 5. Data Persistence Layer
+
+**Technology**: Oracle Database
+
+Stores:
+
+- **Historical match results** for trend analysis
+- **Player statistics** and performance metrics
+- **User bet combinations** and their outcomes
+- **Calculated probabilities** for traceability
+
+```python
+# src/main/python/database/repositories/match_repository.py
+from sqlalchemy import select
+from models.match import Match
+
+class MatchRepository:
+    def __init__(self, session):
+        self.session = session
+        
+    async def get_player_match_history(self, player_id: str, limit: int = 50):
+        """Retrieve player's recent match history for probability analysis"""
+        query = (
+            select(Match)
+            .where(Match.player_id == player_id)
+            .order_by(Match.match_date.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(query)
+        return result.scalars().all()
+```
+
+**Why Oracle Database?**
+- Academic licensing available for university projects
+- Robust transaction support for data integrity
+- Advanced analytics capabilities
+- Industry exposure for learning objectives
+
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Presentation Layer                       │
+│                      (PyQt Desktop)                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │ Match View   │  │  Statistics  │  │ Probability  │    │
+│  │   Widget     │  │   Dashboard  │  │  Calculator  │    │
+│  └──────────────┘  └──────────────┘  └──────────────┘    │
+└────────────────────┬────────────────────────────────────────┘
+                     │ HTTP/REST
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Application Layer                         │
+│                  (FastAPI + Uvicorn)                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │   Players    │  │   Matches    │  │     Bets     │    │
+│  │   Routes     │  │   Routes     │  │    Routes    │    │
+│  └──────────────┘  └──────────────┘  └──────────────┘    │
+└────────┬────────────────────────┬─────────────────┬────────┘
+         │                        │                 │
+         ▼                        ▼                 ▼
+┌─────────────────┐      ┌─────────────────┐   ┌──────────────┐
+│  API Integration│      │   Probability   │   │   Database   │
+│      Layer      │      │      Engine     │   │    Layer     │
+│  (HTTPX Client) │      │  (Pandas/NumPy) │   │   (Oracle)   │
+│                 │      │                 │   │              │
+│  • API-Tennis   │      │  • Calculations │   │ • Matches    │
+│  • Mock Fallback│      │  • Statistics   │   │ • Players    │
+│                 │      │  • Aggregations │   │ • User Data  │
+└─────────────────┘      └─────────────────┘   └──────────────┘
+         │
+         ▼
+┌─────────────────┐
+│  External APIs  │
+│  (API-Tennis)   │
+└─────────────────┘
+```
+
+## Data Flow Example
+
+When a user analyzes a combined bet:
+
+1. **User Input**: User selects 3 matches in PyQt interface
+2. **API Request**: Frontend sends POST to `/api/bets/analyze` with match IDs
+3. **Data Fetching**: Backend uses HTTPX to fetch match statistics from API-Tennis (or mock provider)
+4. **Probability Calculation**: Pandas engine processes historical data and calculates individual + combined probabilities
+5. **Database Logging**: Results stored in Oracle for future analysis
+6. **Response**: JSON response returned to frontend with probability breakdown
+7. **Visualization**: PyQt displays probability chart and confidence score
+
+<Tip>
+**Performance Optimization**: All I/O operations (API calls, database queries) use async/await to prevent blocking. This allows the system to handle multiple probability calculations concurrently.
+</Tip>
+
+## Deployment Architecture
+
+**Containerization**: Docker + Docker Compose
+
+The application runs in containerized environments with:
+
+- **Backend container**: FastAPI application with Uvicorn
+- **Database container**: Oracle Database instance
+- **Volume mounts**: Configuration files from `conf/` directory
+- **Network isolation**: Services communicate via Docker network
+
+```yaml
+# docker-compose.yml structure
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=oracle://db:1521/xe
+      - API_TENNIS_KEY=${API_TENNIS_KEY}
+    depends_on:
+      - database
+      
+  database:
+    image: oracle/database:19c-enterprise
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+```
+
+## Design Principles
+
+### Separation of Concerns
+Each layer has a single responsibility and can be developed/tested independently.
+
+### Async-First
+All I/O operations are non-blocking to maximize throughput and responsiveness.
+
+### Fail-Safe Fallbacks
+Mock data providers ensure the system remains functional when external dependencies fail.
+
+### Data-Driven
+Decisions are based on statistical analysis, not hardcoded rules, making the system adaptable to new betting scenarios.
+
+### Modular Design
+Components can be replaced (e.g., API-Tennis → another provider) without rewriting the entire system.
+
+## Related Documentation
+
+- [Technology Stack](/dev/stack) - Detailed technology choices and justifications
+- [Project Structure](/dev/project-structure) - Directory organization and code layout
+- [API Reference](/api/overview) - Backend endpoint documentation

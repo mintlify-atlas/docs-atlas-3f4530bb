@@ -1,0 +1,192 @@
+---
+title: "Analyzing Individual Bets"
+description: "Learn how to analyze single match bets using OddsEngine's probability calculations and statistical models"
+---
+
+## Overview
+
+OddsEngine helps you analyze individual tennis match bets by calculating win probabilities based on player statistics, historical performance, and current form. This guide walks you through selecting matches, viewing probability calculations, and interpreting results.
+
+## Selecting a Match to Analyze
+
+<Steps>
+  <Step title="Access the match selection view">
+    Open the OddsEngine desktop application and navigate to the **Matches** tab in the main window. You'll see a list of upcoming ATP and WTA tournament matches.
+  </Step>
+
+  <Step title="Filter matches by tournament or date">
+    Use the filter controls at the top of the match list to narrow down matches:
+    - Select a specific tournament from the **Tournament** dropdown
+    - Choose a date range using the **Date Filter** controls
+    - Filter by tour level (ATP/WTA) using the **Tour** selector
+  </Step>
+
+  <Step title="Select a match for analysis">
+    Click on any match row to select it. The match details panel will display:
+    - Player names and rankings
+    - Match date and time
+    - Tournament information
+    - Surface type (hard, clay, grass)
+  </Step>
+</Steps>
+
+## Viewing Probability Calculations
+
+Once you've selected a match, OddsEngine calculates win probabilities for each player based on multiple statistical factors.
+
+### Understanding the Probability Display
+
+The probability panel shows:
+
+- **Player A Win Probability**: Percentage likelihood that Player A wins the match
+- **Player B Win Probability**: Percentage likelihood that Player B wins the match
+- **Confidence Level**: Statistical confidence in the calculation (Low, Medium, High)
+- **Data Completeness**: Indicator of available historical data quality
+
+<Note>
+  Probabilities always sum to 100%. A 65% probability for Player A means 35% for Player B.
+</Note>
+
+### Key Statistical Factors
+
+Click **Show Details** to view the underlying factors influencing the probability:
+
+<AccordionGroup>
+  <Accordion title="Head-to-Head Record">
+    Historical performance between the two players, including:
+    - Win/loss record in previous matchups
+    - Performance on the current surface type
+    - Recent form in head-to-head encounters
+  </Accordion>
+
+  <Accordion title="Current Form">
+    Recent performance metrics:
+    - Win rate in last 10 matches
+    - Performance in current tournament
+    - Ranking trajectory (improving or declining)
+  </Accordion>
+
+  <Accordion title="Surface Performance">
+    Player effectiveness on the match surface:
+    - Career win percentage on surface (hard, clay, grass)
+    - Recent matches on same surface
+    - Surface-specific strengths and weaknesses
+  </Accordion>
+
+  <Accordion title="Tournament Level">
+    Performance at similar tournament tiers:
+    - Grand Slam vs ATP/WTA tour events
+    - Masters/Premier level consistency
+    - Challenger/ITF results (if applicable)
+  </Accordion>
+</AccordionGroup>
+
+## Interpreting Results
+
+### Probability Ranges
+
+Understand what different probability ranges indicate:
+
+| Probability | Interpretation | Action |
+|-------------|----------------|--------|
+| 50-55% | Evenly matched players | High risk bet - avoid or bet small |
+| 56-65% | Slight advantage | Moderate confidence - consider context |
+| 66-75% | Clear favorite | Good confidence level - verify factors |
+| 76-85% | Strong favorite | High confidence - check for value |
+| 86%+ | Overwhelming favorite | Very low risk but check odds value |
+
+<Warning>
+  High probability doesn't always mean good value. Compare OddsEngine's probabilities with bookmaker odds to identify value bets.
+</Warning>
+
+### Confidence Indicators
+
+Pay attention to the confidence level:
+
+- **High Confidence**: Extensive historical data, recent matchups, consistent performance
+- **Medium Confidence**: Adequate data but gaps in specific conditions
+- **Low Confidence**: Limited head-to-head data, infrequent surface matchups, or volatile player form
+
+<Tip>
+  Use the **Data Completeness** indicator to assess reliability. Green means comprehensive data, yellow indicates some gaps, red signals insufficient data.
+</Tip>
+
+## Saving and Tracking Analysis
+
+<Steps>
+  <Step title="Save analysis results">
+    Click **Save Analysis** to store the match analysis in your local database. This allows you to:
+    - Track predictions vs actual results
+    - Review historical analysis accuracy
+    - Build betting performance reports
+  </Step>
+
+  <Step title="Add notes and adjustments">
+    Use the **Notes** field to document:
+    - Contextual factors (injuries, weather, motivation)
+    - Your confidence level adjustments
+    - Reasoning for bet decisions
+  </Step>
+
+  <Step title="Export analysis report">
+    Click **Export** to generate a PDF or CSV report containing:
+    - Probability calculations
+    - Statistical breakdown
+    - Your notes and adjustments
+  </Step>
+</Steps>
+
+## Comparing Multiple Matches
+
+To analyze several individual bets before deciding which to place:
+
+1. Select and save analysis for each match of interest
+2. Navigate to **Saved Analyses** in the sidebar
+3. Use the **Compare** view to see all saved analyses side-by-side
+4. Sort by probability, confidence level, or tournament
+5. Identify the strongest opportunities based on your risk tolerance
+
+<Card title="Next: Combine Multiple Bets" icon="link" href="/guides/combined-probabilities">
+  Learn how to calculate probabilities for combined bets (accumulators/parlays)
+</Card>
+
+## Common Scenarios
+
+### Analyzing a Grand Slam Match
+
+For major tournaments like Grand Slams:
+- OddsEngine factors in best-of-five format vs best-of-three
+- Player stamina and performance in longer matches affects calculations
+- Historical Grand Slam performance carries more weight
+
+### Early Round vs Finals
+
+OddsEngine adjusts calculations based on tournament stage:
+- Early rounds may show higher variability
+- Finals often feature more predictable matchups
+- Player motivation differs by round (ranking points, prize money)
+
+### Handling Missing Data
+
+When OddsEngine shows **Low Confidence** or incomplete data:
+
+<Steps>
+  <Step title="Check data sources">
+    Click **Data Sources** to see which information is available and which is missing
+  </Step>
+
+  <Step title="Review manual factors">
+    Consider factors OddsEngine can't quantify:
+    - Recent injuries or illness
+    - Personal circumstances
+    - Tournament importance to player
+  </Step>
+
+  <Step title="Adjust your confidence">
+    Use the **Manual Override** slider to adjust the probability based on your research
+  </Step>
+</Steps>
+
+<Warning>
+  Manual overrides are not saved in historical accuracy tracking. Use them sparingly and document your reasoning.
+</Warning>

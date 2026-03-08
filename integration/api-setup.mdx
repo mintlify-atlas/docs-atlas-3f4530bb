@@ -1,0 +1,212 @@
+---
+title: 'API Setup'
+description: 'Configure API-Tennis.com integration for OddsEngine'
+---
+
+## Overview
+
+OddsEngine integrates with **API-Tennis.com** as the primary data source for tennis match data, player statistics, and tournament information. This specialized API provides clean JSON responses optimized for asynchronous processing with HTTPX and FastAPI.
+
+## Why API-Tennis.com?
+
+API-Tennis was selected for its:
+
+- **Tennis Specialization**: Dedicated exclusively to tennis data (ATP/WTA coverage)
+- **Async-Ready Architecture**: Clean JSON structure ideal for non-blocking HTTPX requests
+- **FastAPI Integration**: Seamless compatibility with FastAPI's asynchronous endpoints
+- **Performance**: Lightweight responses optimized for Uvicorn execution speed
+- **Documentation**: Complete Python integration guides
+
+<Warning>
+  API-Tennis.com free tier provides **1,000 requests per month**. Monitor your usage to avoid hitting rate limits.
+</Warning>
+
+## Getting Your API Key
+
+1. Visit [api-tennis.com](https://api-tennis.com) and create an account
+2. Navigate to your dashboard to generate an API key
+3. Copy your API key for configuration
+4. Store it securely (never commit to version control)
+
+## Environment Configuration
+
+Create a `.env` file in your project root:
+
+```bash
+API_TENNIS_KEY=your_api_key_here
+API_TENNIS_BASE_URL=https://api.api-tennis.com/v1
+```
+
+## HTTPX Client Setup
+
+OddsEngine uses **HTTPX** as the asynchronous HTTP client for consuming API-Tennis endpoints. This approach leverages FastAPI's async capabilities for optimal performance.
+
+### Basic Client Configuration
+
+```python
+import httpx
+import os
+from typing import Dict, Any
+
+class TennisAPIClient:
+    """Asynchronous client for API-Tennis.com integration."""
+    
+    def __init__(self):
+        self.api_key = os.getenv("API_TENNIS_KEY")
+        self.base_url = os.getenv("API_TENNIS_BASE_URL")
+        self.headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+    
+    async def get_player_data(self, player_id: str) -> Dict[str, Any]:
+        """Fetch player statistics from API-Tennis."""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/players/{player_id}",
+                headers=self.headers,
+                timeout=10.0
+            )
+            response.raise_for_status()
+            return response.json()
+    
+    async def get_match_data(self, match_id: str) -> Dict[str, Any]:
+        """Fetch match details from API-Tennis."""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/matches/{match_id}",
+                headers=self.headers,
+                timeout=10.0
+            )
+            response.raise_for_status()
+            return response.json()
+```
+
+### FastAPI Integration
+
+Integrate the HTTPX client with FastAPI endpoints:
+
+```python
+from fastapi import FastAPI, HTTPException
+from tennis_api_client import TennisAPIClient
+
+app = FastAPI()
+client = TennisAPIClient()
+
+@app.get("/players/{player_id}")
+async def get_player(player_id: str):
+    """Endpoint to retrieve player data."""
+    try:
+        data = await client.get_player_data(player_id)
+        return data
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/matches/{match_id}")
+async def get_match(match_id: str):
+    """Endpoint to retrieve match data."""
+    try:
+        data = await client.get_match_data(match_id)
+        return data
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+```
+
+## Authentication
+
+API-Tennis uses **Bearer token authentication**. Include your API key in the Authorization header:
+
+```python
+headers = {
+    "Authorization": f"Bearer {your_api_key}",
+    "Content-Type": "application/json"
+}
+```
+
+## Available Endpoints
+
+Common API-Tennis endpoints used in OddsEngine:
+
+| Endpoint | Description | Rate Impact |
+|----------|-------------|-------------|
+| `/players/{id}` | Get player statistics and profile | 1 request |
+| `/matches/{id}` | Get match details and results | 1 request |
+| `/tournaments` | List active tournaments | 1 request |
+| `/rankings/atp` | Get ATP rankings | 1 request |
+| `/rankings/wta` | Get WTA rankings | 1 request |
+
+<Note>
+  Plan your endpoint usage carefully to stay within the 1,000 monthly request limit. Consider caching frequently accessed data.
+</Note>
+
+## Error Handling
+
+Implement robust error handling for API failures:
+
+```python
+import httpx
+from typing import Optional, Dict, Any
+
+async def safe_api_call(client: TennisAPIClient, endpoint: str) -> Optional[Dict[str, Any]]:
+    """Make API call with error handling and fallback."""
+    try:
+        response = await client.get(endpoint)
+        return response
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 429:
+            # Rate limit exceeded - trigger mock provider
+            print("Rate limit exceeded. Switching to mock provider.")
+            return None
+        elif e.response.status_code == 401:
+            print("Authentication failed. Check API key.")
+            return None
+        else:
+            print(f"HTTP error occurred: {e}")
+            return None
+    except httpx.RequestError as e:
+        print(f"Request error occurred: {e}")
+        return None
+```
+
+## Rate Limit Management
+
+To manage the 1,000 requests/month limit:
+
+1. **Cache responses** for frequently accessed data
+2. **Batch requests** when possible
+3. **Use mock provider** during development/testing
+4. **Monitor usage** through API dashboard
+5. **Implement request counting** in your application
+
+```python
+import time
+from collections import deque
+
+class RateLimitTracker:
+    """Track API usage to prevent exceeding monthly limits."""
+    
+    def __init__(self, monthly_limit: int = 1000):
+        self.monthly_limit = monthly_limit
+        self.requests = deque()
+    
+    def can_make_request(self) -> bool:
+        """Check if request can be made within limits."""
+        current_time = time.time()
+        month_ago = current_time - (30 * 24 * 60 * 60)
+        
+        # Remove requests older than 30 days
+        while self.requests and self.requests[0] < month_ago:
+            self.requests.popleft()
+        
+        return len(self.requests) < self.monthly_limit
+    
+    def record_request(self):
+        """Record a new API request."""
+        self.requests.append(time.time())
+```
+
+## Next Steps
+
+- Learn about [Data Sources](/integration/data-sources) to understand API-Tennis capabilities
+- Configure the [Mock Provider](/integration/mock-provider) for development and fallback scenarios
+- Review API-Tennis documentation for advanced features

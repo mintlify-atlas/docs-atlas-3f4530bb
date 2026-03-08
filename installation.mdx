@@ -1,0 +1,637 @@
+---
+title: Installation
+description: Detailed setup guide for OddsEngine including all dependencies and system requirements
+---
+
+# Installation Guide
+
+This guide provides comprehensive instructions for installing and configuring OddsEngine on your system.
+
+## System Requirements
+
+### Hardware Requirements
+
+- **CPU**: 2+ cores recommended (4+ for optimal performance)
+- **RAM**: Minimum 4GB (8GB+ recommended for large datasets)
+- **Storage**: At least 2GB free disk space
+- **Network**: Internet connection for API data fetching
+
+### Operating System Support
+
+<CardGroup cols={3}>
+  <Card title="Linux" icon="linux">
+    Ubuntu 20.04+, Debian 11+, Fedora 35+, or compatible distributions
+  </Card>
+  <Card title="macOS" icon="apple">
+    macOS 11 (Big Sur) or later with Homebrew
+  </Card>
+  <Card title="Windows" icon="windows">
+    Windows 10/11 with WSL2 recommended for Docker
+  </Card>
+</CardGroup>
+
+## Prerequisites
+
+### 1. Docker and Docker Compose
+
+Docker is required to run the Oracle Database container.
+
+<CodeGroup>
+```bash Linux (Ubuntu/Debian)
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Add your user to docker group
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Install Docker Compose
+sudo apt-get update
+sudo apt-get install docker-compose-plugin
+
+# Verify installation
+docker --version
+docker compose version
+```
+
+```bash macOS
+# Install Docker Desktop for Mac
+brew install --cask docker
+
+# Start Docker Desktop from Applications
+# Then verify installation
+docker --version
+docker compose version
+```
+
+```powershell Windows
+# Download and install Docker Desktop for Windows
+# Visit: https://docs.docker.com/desktop/install/windows-install/
+
+# Enable WSL2 backend during installation
+# After installation, verify:
+docker --version
+docker compose version
+```
+</CodeGroup>
+
+<Warning>
+On Windows, ensure WSL2 is properly configured. Docker Desktop requires WSL2 backend for optimal performance.
+</Warning>
+
+### 2. Python 3.10 or Higher
+
+OddsEngine requires Python 3.10+ for compatibility with modern libraries.
+
+<CodeGroup>
+```bash Linux (Ubuntu/Debian)
+# Check current version
+python3 --version
+
+# If Python 3.10+ is not installed:
+sudo apt-get update
+sudo apt-get install python3.10 python3.10-venv python3-pip
+
+# Set as default (optional)
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
+```
+
+```bash macOS
+# Install using Homebrew
+brew install python@3.10
+
+# Add to PATH
+echo 'export PATH="/opt/homebrew/opt/python@3.10/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# Verify
+python3 --version
+```
+
+```powershell Windows
+# Download Python 3.10+ from python.org
+# https://www.python.org/downloads/windows/
+
+# During installation, check "Add Python to PATH"
+# Verify installation:
+python --version
+pip --version
+```
+</CodeGroup>
+
+### 3. Git
+
+Required for cloning the repository.
+
+<CodeGroup>
+```bash Linux
+sudo apt-get install git
+git --version
+```
+
+```bash macOS
+brew install git
+git --version
+```
+
+```powershell Windows
+# Download Git for Windows
+winget install --id Git.Git -e --source winget
+git --version
+```
+</CodeGroup>
+
+## Installing OddsEngine
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the OddsEngine repository from GitHub:
+
+    ```bash
+    git clone https://github.com/yourusername/OddsEngine.git
+    cd OddsEngine
+    ```
+
+    Verify the project structure:
+
+    ```bash
+    ls -la
+    ```
+
+    You should see directories like `src/`, `conf/`, `docker-compose.yml`, etc.
+  </Step>
+
+  <Step title="Create Python Virtual Environment">
+    Create an isolated Python environment for OddsEngine:
+
+    ```bash
+    python3 -m venv venv
+    ```
+
+    Activate the virtual environment:
+
+    <CodeGroup>
+    ```bash Linux/macOS
+    source venv/bin/activate
+    ```
+
+    ```powershell Windows
+    venv\Scripts\activate
+    ```
+    </CodeGroup>
+
+    Your prompt should now show `(venv)` prefix.
+  </Step>
+
+  <Step title="Install Python Dependencies">
+    Install all required Python packages:
+
+    ```bash
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    ```
+
+    Key dependencies being installed:
+    - **PyQt6**: Desktop GUI framework
+    - **pandas**: Data analysis and statistical calculations
+    - **httpx**: Async HTTP client for API-Tennis integration
+    - **oracledb**: Oracle Database driver
+    - **python-dotenv**: Environment variable management
+
+    <Note>
+    Installation may take 3-5 minutes depending on your connection speed.
+    </Note>
+  </Step>
+
+  <Step title="Install PyQt System Dependencies">
+    PyQt requires additional system libraries:
+
+    <CodeGroup>
+    ```bash Linux (Ubuntu/Debian)
+    sudo apt-get install -y \
+      python3-pyqt6 \
+      libxcb-xinerama0 \
+      libxcb-icccm4 \
+      libxcb-image0 \
+      libxcb-keysyms1 \
+      libxcb-randr0 \
+      libxcb-render-util0 \
+      libxcb-xfixes0 \
+      libxkbcommon-x11-0
+    ```
+
+    ```bash macOS
+    # Qt dependencies are typically included with PyQt6
+    # If you encounter issues, install Qt:
+    brew install qt@6
+    ```
+
+    ```powershell Windows
+    # PyQt6 includes all necessary DLLs on Windows
+    # No additional system packages required
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    Create a `.env` file in the project root:
+
+    ```bash
+    touch .env
+    ```
+
+    Add the following configuration (use your preferred text editor):
+
+    ```bash
+    # API-Tennis Configuration
+    API_TENNIS_KEY=your_api_key_here
+    API_TENNIS_BASE_URL=https://api-tennis.com/v1
+    API_TENNIS_RATE_LIMIT=1000
+
+    # Oracle Database Configuration
+    ORACLE_HOST=localhost
+    ORACLE_PORT=1521
+    ORACLE_SERVICE=XEPDB1
+    ORACLE_USER=oddsengine
+    ORACLE_PASSWORD=SecureP@ssw0rd2026
+    ORACLE_DSN=localhost:1521/XEPDB1
+
+    # Application Configuration
+    APP_ENV=development
+    LOG_LEVEL=INFO
+    LOG_FILE=temp/application.log
+
+    # Mock Data Fallback
+    ENABLE_MOCK_FALLBACK=true
+    MOCK_DATA_PATH=jupyter/datasets/
+    ```
+
+    <Warning>
+    **API Key Required**: Sign up for a free API key at [api-tennis.com](https://api-tennis.com). The free tier provides 1,000 requests per month.
+    </Warning>
+
+    <Note>
+    The `.env` file is automatically ignored by Git (see `.gitignore`). Never commit sensitive credentials.
+    </Note>
+  </Step>
+
+  <Step title="Set Up Oracle Database with Docker">
+    Start the Oracle Database container:
+
+    ```bash
+    docker-compose up -d db
+    ```
+
+    Monitor the initialization process:
+
+    ```bash
+    docker-compose logs -f db
+    ```
+
+    Wait for the message:
+    ```
+    #########################
+    DATABASE IS READY TO USE!
+    #########################
+    ```
+
+    This typically takes 2-3 minutes on first run as the database is initialized.
+
+    <Warning>
+    Oracle Database requires at least **4GB of RAM**. Ensure Docker Desktop has sufficient memory allocated in Settings → Resources → Memory.
+    </Warning>
+  </Step>
+
+  <Step title="Initialize Database Schema">
+    Run the setup script to create tables and initial data:
+
+    ```bash
+    chmod +x scripts/setup.sh
+    ./scripts/setup.sh
+    ```
+
+    Or on Windows:
+
+    ```powershell
+    python scripts/setup.py
+    ```
+
+    This script will:
+    - Create player tables
+    - Create match history tables
+    - Create probability calculation tables
+    - Create indexes for performance
+    - Insert seed data for testing
+
+    Expected output:
+    ```
+    ✓ Connected to Oracle Database
+    ✓ Created players table
+    ✓ Created matches table
+    ✓ Created probabilities table
+    ✓ Created indexes
+    ✓ Inserted seed data (25 players, 100 matches)
+    ✓ Database initialization complete
+    ```
+  </Step>
+
+  <Step title="Verify Installation">
+    Run the verification script to check all components:
+
+    ```bash
+    python scripts/verify_installation.py
+    ```
+
+    This will test:
+    - Python version (3.10+)
+    - Required packages (PyQt6, pandas, etc.)
+    - Database connectivity
+    - API-Tennis connection
+    - File system permissions
+
+    All checks should pass with green checkmarks.
+  </Step>
+</Steps>
+
+## Running OddsEngine
+
+After successful installation, launch the application:
+
+```bash
+# Ensure virtual environment is activated
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+
+# Start the application
+python src/main/python/app.py
+```
+
+The PyQt desktop interface will launch showing the main dashboard.
+
+## Project Structure
+
+Understanding the OddsEngine directory layout:
+
+```
+OddsEngine/
+├── .github/              # GitHub workflows for CI/CD
+│   ├── workflows/
+│   │   ├── ci.yml       # Continuous Integration
+│   │   └── cd.yml       # Continuous Deployment
+├── conf/                 # Configuration files
+│   ├── config.yaml      # Application config
+│   └── settings.json    # User preferences
+├── docs/                 # Project documentation
+├── jupyter/              # Data analysis notebooks
+│   ├── notebooks/       # Jupyter notebooks
+│   └── datasets/        # CSV data files
+├── scripts/              # Utility scripts
+│   ├── setup.sh         # Database initialization
+│   ├── deploy.sh        # Deployment script
+│   └── test.sh          # Test runner
+├── src/
+│   ├── main/python/     # Application source code
+│   │   ├── app.py       # Main entry point
+│   │   ├── models/      # Probability models
+│   │   ├── api/         # API-Tennis client
+│   │   └── ui/          # PyQt interface
+│   └── test/python/     # Unit and integration tests
+├── temp/                 # Temporary files and logs
+├── .env                  # Environment variables (create this)
+├── .gitignore           # Git ignore rules
+├── docker-compose.yml   # Docker services config
+├── Dockerfile           # Application container
+├── requirements.txt     # Python dependencies
+└── README.md            # Project overview
+```
+
+## Configuration Files
+
+### config.yaml
+
+Application configuration in `conf/config.yaml`:
+
+```yaml
+api:
+  tennis:
+    timeout: 30
+    retry_attempts: 3
+    cache_ttl: 3600
+
+database:
+  pool_size: 5
+  pool_recycle: 3600
+  echo: false
+
+models:
+  probability:
+    confidence_threshold: 0.7
+    min_data_points: 10
+
+ui:
+  theme: light
+  refresh_interval: 60
+```
+
+### settings.json
+
+User preferences in `conf/settings.json`:
+
+```json
+{
+  "display": {
+    "language": "en",
+    "decimal_places": 2,
+    "date_format": "YYYY-MM-DD"
+  },
+  "notifications": {
+    "enabled": true,
+    "sound": false
+  },
+  "data_sync": {
+    "auto_sync": true,
+    "sync_interval_hours": 24
+  }
+}
+```
+
+## Verification Steps
+
+After installation, verify each component:
+
+### Check Docker Services
+
+```bash
+docker-compose ps
+```
+
+Expected output:
+```
+NAME                COMMAND                  STATUS              PORTS
+oddsengine-db-1     "/bin/sh -c 'exec..."   Up 5 minutes        0.0.0.0:1521->1521/tcp
+```
+
+### Test Database Connection
+
+```bash
+python -c "from src.main.python.db import test_connection; test_connection()"
+```
+
+Should output: `✓ Database connection successful`
+
+### Test API Connection
+
+```bash
+python -c "from src.main.python.api import test_api; test_api()"
+```
+
+Should output: `✓ API-Tennis connection successful (1000 requests remaining)`
+
+### Run Unit Tests
+
+```bash
+chmod +x scripts/test.sh
+./scripts/test.sh
+```
+
+Or directly:
+
+```bash
+pytest src/test/python/ -v
+```
+
+## Troubleshooting
+
+### Docker Issues
+
+**Docker daemon not running:**
+```bash
+# Linux
+sudo systemctl start docker
+
+# macOS/Windows
+# Start Docker Desktop application
+```
+
+**Port 1521 already in use:**
+```bash
+# Find process using port
+sudo lsof -i :1521  # Linux/macOS
+netstat -ano | findstr :1521  # Windows
+
+# Change port in docker-compose.yml and .env
+```
+
+### Python Issues
+
+**PyQt6 import errors:**
+```bash
+# Reinstall PyQt6
+pip uninstall PyQt6 PyQt6-Qt6 PyQt6-sip
+pip install PyQt6
+
+# Linux: Install system dependencies (see Step 4)
+```
+
+**oracledb connection fails:**
+```bash
+# Check if Oracle container is running
+docker-compose logs db
+
+# Verify credentials in .env match docker-compose.yml
+# Wait for database to fully initialize (2-3 minutes)
+```
+
+### API Issues
+
+**API-Tennis rate limit exceeded:**
+- OddsEngine automatically switches to mock data mode
+- Check remaining requests: `curl -H "Authorization: Bearer YOUR_KEY" https://api-tennis.com/v1/status`
+- Rate limits reset monthly
+
+**API key invalid:**
+- Verify key in `.env` file has no extra spaces
+- Regenerate key at [api-tennis.com](https://api-tennis.com)
+- Check API service status
+
+### Permission Issues
+
+**Scripts not executable:**
+```bash
+chmod +x scripts/*.sh
+```
+
+**Database file permissions:**
+```bash
+sudo chown -R $USER:$USER temp/
+chmod -R 755 temp/
+```
+
+## Updating OddsEngine
+
+To update to the latest version:
+
+```bash
+# Pull latest changes
+git pull origin main
+
+# Update Python dependencies
+pip install -r requirements.txt --upgrade
+
+# Update database schema
+./scripts/migrate.sh
+
+# Rebuild Docker images
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+## Uninstalling OddsEngine
+
+To completely remove OddsEngine:
+
+```bash
+# Stop and remove Docker containers
+docker-compose down -v
+
+# Remove Docker images
+docker rmi oddsengine:latest oracle-db:latest
+
+# Deactivate and remove virtual environment
+deactivate
+rm -rf venv/
+
+# Remove project directory
+cd ..
+rm -rf OddsEngine/
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quick Start Guide" icon="rocket" href="/quickstart">
+    Run your first probability calculation in 5 minutes
+  </Card>
+  <Card title="Data Integration" icon="plug" href="/integration/api-setup">
+    Set up API-Tennis integration
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/dev/architecture">
+    Understanding OddsEngine's system design
+  </Card>
+  <Card title="Contributing" icon="git-alt" href="/dev/contributing">
+    Contribute to the OddsEngine project
+  </Card>
+</CardGroup>
+
+## Getting Help
+
+If you encounter issues:
+
+1. Check the [GitHub Issues](https://github.com/yourusername/OddsEngine/issues)
+2. Review logs in `temp/application.log`
+3. Run diagnostics: `python scripts/diagnose.py`
+4. Contact the development team
+
+<Note>
+**Academic Project**: OddsEngine is developed as part of the Software Engineering Fundamentals course at Pontificia Universidad Javeriana, 2026.
+</Note>

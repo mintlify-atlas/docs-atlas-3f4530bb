@@ -1,0 +1,265 @@
+---
+title: 'Data Sources'
+description: 'Understanding API-Tennis.com capabilities and data coverage for OddsEngine'
+---
+
+## Overview
+
+OddsEngine relies on **API-Tennis.com** as its primary data provider for tennis statistics, match results, player information, and tournament data. This page documents the capabilities, coverage, and limitations of the API.
+
+## API-Tennis.com Capabilities
+
+API-Tennis.com is a **specialized tennis-only API** that provides:
+
+- **Real-time match data**: Live scores, match statistics, and results
+- **Player profiles**: Rankings, statistics, career history, and performance metrics
+- **Tournament information**: ATP and WTA tournament schedules, draws, and results
+- **Historical data**: Past match results and player statistics
+- **Rankings**: Current ATP and WTA rankings
+
+### Why API-Tennis?
+
+API-Tennis was chosen after evaluating multiple options:
+
+| Criteria | API-Tennis | RapidAPI | Other APIs |
+|----------|------------|----------|------------|
+| **ATP/WTA Coverage** | ✓ Specialized | Varies | Limited |
+| **Async Integration** | Excellent (Clean JSON) | Medium | Medium |
+| **Documentation** | Complete for Python | Variable | Basic |
+| **Free Tier** | 1,000 req/month | Varies | Non-functional |
+
+<Note>
+  API-Tennis specialization in tennis ensures more accurate data for OddsEngine's prediction engine compared to general sports APIs.
+</Note>
+
+## ATP/WTA Coverage
+
+API-Tennis provides comprehensive coverage for professional tennis:
+
+### ATP (Men's Tennis)
+- ATP Tour events
+- Grand Slam tournaments
+- ATP Finals
+- ATP Challenger Tour (selected events)
+- Player rankings and statistics
+
+### WTA (Women's Tennis)
+- WTA Tour events
+- Grand Slam tournaments
+- WTA Finals
+- Player rankings and statistics
+
+### Tournament Data Includes:
+- Match schedules and results
+- Tournament draws and seeds
+- Surface information (hard, clay, grass)
+- Prize money and points distribution
+- Player head-to-head records
+
+## Data Structure
+
+API-Tennis returns clean, lightweight JSON responses optimized for Python processing:
+
+### Player Data Example
+
+```json
+{
+  "player_id": "12345",
+  "name": "Roger Federer",
+  "country": "SUI",
+  "ranking": {
+    "current": 1,
+    "best": 1
+  },
+  "stats": {
+    "wins": 1242,
+    "losses": 271,
+    "win_percentage": 82.1,
+    "titles": 103
+  },
+  "surface_stats": {
+    "hard": {"wins": 783, "losses": 143},
+    "clay": {"wins": 224, "losses": 67},
+    "grass": {"wins": 192, "losses": 40}
+  }
+}
+```
+
+### Match Data Example
+
+```json
+{
+  "match_id": "67890",
+  "tournament": "Wimbledon",
+  "round": "Final",
+  "surface": "grass",
+  "date": "2023-07-16",
+  "player1": {
+    "id": "12345",
+    "name": "Roger Federer",
+    "seed": 1
+  },
+  "player2": {
+    "id": "54321",
+    "name": "Rafael Nadal",
+    "seed": 2
+  },
+  "score": "6-4, 7-6, 6-3",
+  "winner": "12345",
+  "stats": {
+    "duration": "2h 45m",
+    "aces": [15, 8],
+    "double_faults": [2, 4],
+    "first_serve_percentage": [68, 71]
+  }
+}
+```
+
+## Rate Limits and Usage
+
+<Warning>
+  **Free Tier Limit**: 1,000 requests per month
+</Warning>
+
+The free tier provides 1,000 API requests per month. This translates to approximately:
+
+- **33 requests per day** (evenly distributed)
+- **250 requests per week** (evenly distributed)
+- Suitable for development, testing, and small-scale analysis
+
+### Rate Limit Best Practices
+
+1. **Cache frequently accessed data**
+   - Player profiles
+   - Historical match results
+   - Tournament schedules
+
+2. **Batch your requests strategically**
+   - Fetch multiple players in development cycles
+   - Update rankings weekly instead of daily
+
+3. **Use mock provider during development**
+   - Reduces API consumption
+   - Enables offline development
+   - Prevents hitting limits during testing
+
+4. **Monitor your usage**
+   - Track requests in your application
+   - Set up usage alerts
+   - Review API dashboard regularly
+
+```python
+# Example: Implementing request caching
+import httpx
+from functools import lru_cache
+from datetime import datetime, timedelta
+
+class CachedTennisClient:
+    def __init__(self):
+        self.cache_duration = timedelta(hours=24)
+    
+    @lru_cache(maxsize=128)
+    async def get_player_cached(self, player_id: str, cache_key: str):
+        """Cache player data for 24 hours."""
+        # cache_key includes date to invalidate daily
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"/players/{player_id}")
+            return response.json()
+    
+    async def get_player(self, player_id: str):
+        cache_key = datetime.now().strftime("%Y-%m-%d")
+        return await self.get_player_cached(player_id, cache_key)
+```
+
+## Data Freshness
+
+- **Live matches**: Updated in real-time during events
+- **Match results**: Available within minutes of completion
+- **Rankings**: Updated weekly (Monday following tournaments)
+- **Player statistics**: Updated after each match
+- **Tournament schedules**: Updated as draws are released
+
+## Integration with FastAPI
+
+API-Tennis JSON responses integrate seamlessly with FastAPI's async architecture:
+
+```python
+from fastapi import FastAPI
+import httpx
+
+app = FastAPI()
+
+@app.get("/api/player/{player_id}")
+async def get_player_stats(player_id: str):
+    """Fetch player data and process for OddsEngine."""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.api-tennis.com/v1/players/{player_id}"
+        )
+        data = response.json()
+        
+        # Process for OddsEngine probability calculations
+        processed = {
+            "player_id": data["player_id"],
+            "name": data["name"],
+            "win_rate": data["stats"]["win_percentage"],
+            "surface_performance": data["surface_stats"]
+        }
+        
+        return processed
+```
+
+## Data Processing with Pandas
+
+OddsEngine uses **Pandas** for probabilistic analysis of API-Tennis data:
+
+```python
+import pandas as pd
+import httpx
+
+async def analyze_player_performance(player_id: str) -> pd.DataFrame:
+    """Fetch and analyze player match history."""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.api-tennis.com/v1/players/{player_id}/matches"
+        )
+        matches = response.json()
+    
+    # Convert to DataFrame for analysis
+    df = pd.DataFrame(matches)
+    
+    # Calculate surface-specific win rates
+    surface_analysis = df.groupby('surface').agg({
+        'result': lambda x: (x == 'win').sum() / len(x) * 100
+    })
+    
+    return surface_analysis
+```
+
+## Fallback Strategy
+
+When API-Tennis is unavailable or rate limits are exceeded, OddsEngine automatically switches to the **mock data provider**:
+
+- Simulates API-Tennis responses locally
+- Enables continued development without API access
+- Maintains application functionality during outages
+- Returns realistic test data for development
+
+See [Mock Provider](/integration/mock-provider) for details on the fallback mechanism.
+
+## Limitations
+
+- **Request limit**: 1,000 requests/month on free tier
+- **No real-time streaming**: Polling required for live match updates
+- **Historical data**: May have limited depth for older players/matches
+- **Regional coverage**: Primarily major ATP/WTA events
+
+<Note>
+  For production deployments requiring higher request volumes, consider upgrading to API-Tennis paid tiers or implementing aggressive caching strategies.
+</Note>
+
+## Next Steps
+
+- Configure your [API Setup](/integration/api-setup) to start consuming data
+- Learn about the [Mock Provider](/integration/mock-provider) for development and testing
+- Explore API-Tennis documentation for advanced features and endpoints

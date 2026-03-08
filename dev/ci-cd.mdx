@@ -1,0 +1,458 @@
+---
+title: CI/CD Pipeline
+description: Continuous Integration and Deployment workflows for OddsEngine
+---
+
+OddsEngine uses GitHub Actions to automate testing, quality checks, and deployment processes, ensuring code quality and reliable releases.
+
+## Overview
+
+Our CI/CD pipeline automates:
+
+<CardGroup cols={2}>
+  <Card title="Continuous Integration" icon="code-merge">
+    Automated testing and quality checks on every push and PR
+  </Card>
+  
+  <Card title="Continuous Deployment" icon="rocket">
+    Automated deployment to staging and production environments
+  </Card>
+  
+  <Card title="Code Quality" icon="shield-check">
+    SonarQube analysis for maintainability and security
+  </Card>
+  
+  <Card title="Docker Builds" icon="docker">
+    Containerized builds for consistent environments
+  </Card>
+</CardGroup>
+
+## CI Workflow
+
+The Continuous Integration workflow runs on every push and pull request to ensure code quality.
+
+### Trigger Events
+
+CI runs automatically on:
+
+```yaml
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+```
+
+- **Push to `main`**: Production code validation
+- **Push to `develop`**: Integration branch checks
+- **Pull Requests**: Pre-merge validation
+
+### CI Pipeline Stages
+
+<Steps>
+  <Step title="Checkout Code">
+    ```yaml
+    - uses: actions/checkout@v4
+    ```
+    
+    Retrieves the latest code from the repository.
+  </Step>
+  
+  <Step title="Smoke Test">
+    ```yaml
+    - name: Smoke
+      run: echo "CI running"
+    ```
+    
+    Basic verification that the workflow is executing.
+    
+    <Note>
+      This is a minimal implementation. In a full pipeline, this stage would include actual smoke tests to verify critical functionality.
+    </Note>
+  </Step>
+</Steps>
+
+### Full CI Pipeline (Recommended)
+
+While the current implementation is minimal, a complete CI pipeline should include:
+
+<AccordionGroup>
+  <Accordion title="Environment Setup">
+    ```yaml
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+    ```
+  </Accordion>
+  
+  <Accordion title="Install Dependencies">
+    ```yaml
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov flake8
+    ```
+  </Accordion>
+  
+  <Accordion title="Linting & Style Checks">
+    ```yaml
+    - name: Lint with flake8
+      run: |
+        # Stop build if there are Python syntax errors
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Check for PEP 8 compliance
+        flake8 . --count --max-complexity=10 --max-line-length=127 --statistics
+    ```
+  </Accordion>
+  
+  <Accordion title="Run Tests">
+    ```yaml
+    - name: Test with pytest
+      run: |
+        pytest tests/ --cov=src --cov-report=xml --cov-report=term
+    ```
+  </Accordion>
+  
+  <Accordion title="Code Quality Analysis">
+    ```yaml
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@master
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+    ```
+  </Accordion>
+  
+  <Accordion title="Build Docker Image">
+    ```yaml
+    - name: Build Docker image
+      run: |
+        docker build -t oddsengine:${{ github.sha }} .
+        docker tag oddsengine:${{ github.sha }} oddsengine:latest
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## CD Workflow
+
+<Warning>
+  The CD workflow file (`cd.yml`) is currently empty. Deployment automation should be configured based on your hosting environment.
+</Warning>
+
+### Recommended CD Pipeline
+
+A complete deployment pipeline should include:
+
+<Steps>
+  <Step title="Build & Test">
+    - Run full CI pipeline
+    - Ensure all tests pass
+    - Validate code quality gates
+  </Step>
+  
+  <Step title="Build Artifacts">
+    - Build Docker images
+    - Tag with version/commit SHA
+    - Push to container registry
+  </Step>
+  
+  <Step title="Deploy to Staging">
+    - Deploy to staging environment
+    - Run smoke tests
+    - Validate deployment health
+  </Step>
+  
+  <Step title="Deploy to Production">
+    - Require manual approval
+    - Deploy to production
+    - Monitor for errors
+    - Rollback capability
+  </Step>
+</Steps>
+
+### Deployment Triggers
+
+Recommended trigger strategy:
+
+<Tabs>
+  <Tab title="Automatic Deployment">
+    ```yaml
+    on:
+      push:
+        branches: [ "develop" ]
+    ```
+    
+    Auto-deploy `develop` branch to staging environment for integration testing.
+  </Tab>
+  
+  <Tab title="Manual Deployment">
+    ```yaml
+    on:
+      workflow_dispatch:
+        inputs:
+          environment:
+            description: 'Environment to deploy'
+            required: true
+            type: choice
+            options:
+              - staging
+              - production
+    ```
+    
+    Manual trigger for controlled production deployments.
+  </Tab>
+  
+  <Tab title="Release Tags">
+    ```yaml
+    on:
+      push:
+        tags:
+          - 'v*.*.*'
+    ```
+    
+    Deploy on version tag creation (e.g., `v1.0.0`).
+  </Tab>
+</Tabs>
+
+## Quality Gates
+
+Code must pass these quality gates before merging:
+
+<AccordionGroup>
+  <Accordion title="Test Coverage" icon="percentage">
+    - **Minimum**: 80% code coverage
+    - **Measurement**: pytest-cov
+    - **Enforcement**: Fail pipeline if below threshold
+    
+    ```bash
+    pytest --cov=src --cov-fail-under=80
+    ```
+  </Accordion>
+  
+  <Accordion title="Code Quality" icon="star">
+    - **Tool**: SonarQube
+    - **Metrics**: Maintainability, Reliability, Security
+    - **Rating**: B or higher required
+    - **Debt**: < 5% technical debt ratio
+  </Accordion>
+  
+  <Accordion title="Linting" icon="check">
+    - **Tool**: flake8
+    - **Standard**: PEP 8 compliance
+    - **Complexity**: Max cyclomatic complexity of 10
+    - **No**: Syntax errors or undefined names
+  </Accordion>
+  
+  <Accordion title="Security" icon="lock">
+    - **Dependencies**: No critical vulnerabilities
+    - **Code**: No security hotspots in SonarQube
+    - **Secrets**: No hardcoded credentials
+  </Accordion>
+</AccordionGroup>
+
+## Branch Protection Rules
+
+Protect important branches with required checks:
+
+### Main Branch
+
+- Require PR before merging
+- Require at least 1 approval
+- Require CI pipeline to pass
+- Require branch to be up to date
+- No direct pushes allowed
+
+### Develop Branch
+
+- Require PR before merging
+- Require CI pipeline to pass
+- Allow maintainers to bypass (emergency fixes)
+
+## Docker Integration
+
+Our pipeline uses Docker for consistent builds and deployments:
+
+### Dockerfile
+
+Ensure your Dockerfile is optimized for CI/CD:
+
+```dockerfile
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install dependencies first (better caching)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Run tests during build (optional)
+RUN pytest tests/ || true
+
+CMD ["python", "main.py"]
+```
+
+### Docker Compose for Local CI
+
+Test CI pipeline locally:
+
+```bash
+docker-compose -f docker-compose.ci.yml up --build
+```
+
+## Monitoring & Notifications
+
+### Pipeline Status
+
+Monitor pipeline health:
+
+- **GitHub Actions Dashboard**: View all workflow runs
+- **Badges**: Add status badges to README
+- **Notifications**: Configure GitHub notifications
+
+### Status Badge
+
+Add to your README:
+
+```markdown
+![CI](https://github.com/nicosanlucon/OddsEngine/workflows/CI/badge.svg)
+```
+
+### Notifications
+
+Configure Slack/Discord notifications for:
+
+- Pipeline failures on `main` or `develop`
+- Deployment completions
+- Critical security vulnerabilities
+
+## Secrets Management
+
+<Warning>
+  Never commit secrets to the repository. Use GitHub Secrets for sensitive data.
+</Warning>
+
+### Required Secrets
+
+Configure these in GitHub Settings > Secrets:
+
+- `SONAR_TOKEN`: SonarQube authentication
+- `SONAR_HOST_URL`: SonarQube server URL
+- `DOCKER_USERNAME`: Docker registry username
+- `DOCKER_PASSWORD`: Docker registry password
+- `DEPLOY_KEY`: SSH key for deployment
+
+### Using Secrets
+
+```yaml
+env:
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Fast Feedback" icon="gauge-high">
+    Keep CI runs under 10 minutes. Use caching and parallel jobs.
+  </Card>
+  
+  <Card title="Fail Fast" icon="circle-xmark">
+    Run quick checks (linting) before expensive ones (integration tests).
+  </Card>
+  
+  <Card title="Reproducible Builds" icon="arrows-rotate">
+    Use Docker and locked dependencies for consistency.
+  </Card>
+  
+  <Card title="Clear Failures" icon="bug">
+    Provide actionable error messages when pipeline fails.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion title="Pipeline Fails on Dependencies">
+    **Problem**: `pip install` fails or times out
+    
+    **Solution**:
+    - Use caching for pip dependencies
+    - Check `requirements.txt` for version conflicts
+    - Verify Python version matches local environment
+  </Accordion>
+  
+  <Accordion title="Tests Pass Locally but Fail in CI">
+    **Problem**: Environment differences
+    
+    **Solution**:
+    - Run tests in Docker locally: `docker-compose up --build`
+    - Check for hardcoded paths or environment variables
+    - Verify database or API mocks are configured
+  </Accordion>
+  
+  <Accordion title="Docker Build Timeout">
+    **Problem**: Image build takes too long
+    
+    **Solution**:
+    - Use layer caching effectively
+    - Install dependencies in separate layer
+    - Use `.dockerignore` to exclude unnecessary files
+  </Accordion>
+</AccordionGroup>
+
+## Expanding the Pipeline
+
+As the project grows, consider adding:
+
+<Steps>
+  <Step title="Performance Testing">
+    - Load testing for API endpoints
+    - Response time monitoring
+    - Memory and CPU profiling
+  </Step>
+  
+  <Step title="Security Scanning">
+    - Dependency vulnerability scanning (Snyk, Dependabot)
+    - Static security analysis (Bandit)
+    - Container image scanning
+  </Step>
+  
+  <Step title="Database Migrations">
+    - Automated migration testing
+    - Rollback verification
+    - Data integrity checks
+  </Step>
+  
+  <Step title="E2E Testing">
+    - Selenium or Playwright tests
+    - User flow validation
+    - Cross-browser testing
+  </Step>
+</Steps>
+
+## Resources
+
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [Docker Documentation](https://docs.docker.com/)
+- [SonarQube Documentation](https://docs.sonarqube.org/)
+- [pytest Documentation](https://docs.pytest.org/)
+
+<Note>
+  The CI/CD pipeline is continuously evolving. Contribute improvements through pull requests following our [contributing guidelines](/dev/contributing).
+</Note>
+
+---
+
+**Academic Context**: This CI/CD implementation is part of the DevOps practices taught in Fundamentos de Ingeniería de Software at Pontificia Universidad Javeriana (2026).

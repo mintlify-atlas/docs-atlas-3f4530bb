@@ -1,0 +1,521 @@
+---
+title: 'Tennis Data'
+description: 'Understanding tennis-specific data, rankings, and tournament structures'
+icon: 'trophy'
+---
+
+## Overview
+
+Tennis has a unique data landscape shaped by two major tours (ATP and WTA), multiple court surfaces, and a complex ranking system. OddsEngine is built specifically for tennis, leveraging domain-specific data that general sports platforms overlook.
+
+<Note>
+  Tennis specialization is a key differentiator for OddsEngine. The platform understands tennis-specific nuances like surface preferences, best-of-5 vs best-of-3 formats, and tournament category impacts.
+</Note>
+
+## Professional Tours
+
+### ATP (Association of Tennis Professionals)
+
+The ATP governs men's professional tennis.
+
+**Tour Structure:**
+
+- **Grand Slams**: 4 major tournaments (managed by ITF, ATP points awarded)
+- **ATP Finals**: Year-end championship for top 8 players
+- **Masters 1000**: 9 mandatory tournaments
+- **ATP 500**: 13 tournaments
+- **ATP 250**: 40+ tournaments
+- **Challengers**: Development tour
+
+### WTA (Women's Tennis Association)
+
+The WTA governs women's professional tennis.
+
+**Tour Structure:**
+
+- **Grand Slams**: 4 major tournaments (same venues as ATP)
+- **WTA Finals**: Year-end championship for top 8 players
+- **WTA 1000**: Premier mandatory tournaments
+- **WTA 500**: Mid-tier tournaments
+- **WTA 250**: Entry-level tour events
+
+<Info>
+  OddsEngine covers both ATP and WTA tours through the API-Tennis data source, providing comprehensive coverage of professional tennis.
+</Info>
+
+## Ranking Systems
+
+### ATP Rankings
+
+The ATP ranking system determines tournament seeding and qualification.
+
+**Point Allocation:**
+
+| Tournament Level | Winner | Finalist | Semifinalist | Quarterfinalist |
+|-----------------|--------|----------|--------------|----------------|
+| **Grand Slam** | 2000 | 1200 | 720 | 360 |
+| **ATP Finals** | 1500* | - | - | - |
+| **Masters 1000** | 1000 | 600 | 360 | 180 |
+| **ATP 500** | 500 | 300 | 180 | 90 |
+| **ATP 250** | 250 | 150 | 90 | 45 |
+
+*ATP Finals uses a round-robin format with different point allocation
+
+**Ranking Calculation:**
+
+```python
+def calculate_atp_ranking_points(player_id, time_period='52_weeks'):
+    """
+    ATP rankings are based on best 18 results in rolling 52-week period
+    """
+    tournaments = get_player_tournaments(player_id, weeks=52)
+    
+    # Sort by points earned (descending)
+    tournaments.sort(key=lambda t: t.points_earned, reverse=True)
+    
+    # Count mandatory tournaments
+    mandatory = [
+        'Grand Slams': 4,
+        'Masters 1000': 8,  # Best 8 of 9
+        'ATP Finals': 1     # If qualified
+    ]
+    
+    # Take best 18 results
+    best_results = tournaments[:18]
+    
+    total_points = sum(t.points_earned for t in best_results)
+    
+    return total_points
+```
+
+<Tip>
+  Rankings are updated weekly after each tournament. The "Race to Turin" tracks points earned in the current calendar year for ATP Finals qualification.
+</Tip>
+
+### WTA Rankings
+
+WTA rankings follow a similar but distinct system:
+
+**Key Differences from ATP:**
+
+- Best 16 results count (vs 18 for ATP)
+- Mandatory tournament requirements differ
+- Separate rankings for singles and doubles
+
+**Point Distribution:**
+
+| Tournament Level | Winner | Finalist | Semifinalist | Quarterfinalist |
+|-----------------|--------|----------|--------------|----------------|
+| **Grand Slam** | 2000 | 1300 | 780 | 430 |
+| **WTA Finals** | 1500* | - | - | - |
+| **WTA 1000** | 1000 | 650 | 390 | 215 |
+| **WTA 500** | 470 | 305 | 185 | 100 |
+| **WTA 250** | 280 | 180 | 110 | 60 |
+
+### Ranking Volatility
+
+```python
+def calculate_ranking_trend(player_id, weeks=12):
+    """
+    Analyze ranking stability and momentum
+    """
+    historical_rankings = get_ranking_history(player_id, weeks)
+    
+    # Calculate metrics
+    current_rank = historical_rankings[0]
+    average_rank = np.mean(historical_rankings)
+    std_dev = np.std(historical_rankings)
+    trend = calculate_linear_trend(historical_rankings)
+    
+    return {
+        'current': current_rank,
+        'average': average_rank,
+        'volatility': std_dev,
+        'trend': 'improving' if trend < 0 else 'declining',
+        'trend_slope': trend
+    }
+```
+
+<Info>
+  Ranking trends provide insight beyond current ranking. A player at #15 trending upward may be more dangerous than a stable #12.
+</Info>
+
+## Court Surfaces
+
+### Surface Types
+
+Tennis is unique among major sports in having multiple playing surfaces:
+
+#### Clay Courts
+
+**Characteristics:**
+- **Speed**: Slow
+- **Bounce**: High and consistent
+- **Maintenance**: Requires daily brushing and watering
+- **Ball Wear**: Highest (clay particles affect felt)
+
+**Playing Style Favored:**
+- Baseline grinders
+- Players with excellent stamina
+- Defensive specialists
+- Topspin-heavy hitters
+
+**Major Tournaments:**
+- French Open (Roland Garros)
+- Monte-Carlo Masters
+- Madrid Open
+- Rome Masters
+
+<Note>
+  Clay court specialists often have vastly different win rates on clay vs other surfaces. Rafael Nadal's 92% career win rate on clay vs 78% on hard courts exemplifies this specialization.
+</Note>
+
+#### Hard Courts
+
+**Characteristics:**
+- **Speed**: Medium (varies by composition)
+- **Bounce**: Consistent and predictable
+- **Maintenance**: Minimal
+- **Ball Wear**: Moderate
+
+**Playing Style Favored:**
+- All-court players
+- Versatile game styles
+- Big servers have advantage
+
+**Major Tournaments:**
+- Australian Open (Plexicushion)
+- US Open (DecoTurf)
+- Most ATP Masters 1000 events
+
+**Hard Court Variations:**
+
+```python
+hard_court_speeds = {
+    'Plexicushion': {'speed': 'medium-fast', 'tournaments': ['Australian Open']},
+    'DecoTurf': {'speed': 'medium', 'tournaments': ['US Open']},
+    'GreenSet': {'speed': 'medium', 'tournaments': ['Various ATP 500/250']}
+}
+```
+
+#### Grass Courts
+
+**Characteristics:**
+- **Speed**: Fast
+- **Bounce**: Low and variable
+- **Maintenance**: Intensive (weather-dependent)
+- **Ball Wear**: Low initially, surface deteriorates over tournament
+
+**Playing Style Favored:**
+- Serve-and-volley players
+- Big servers
+- Flat hitters (topspin less effective)
+- Players comfortable with lower balls
+
+**Major Tournaments:**
+- Wimbledon (only Grand Slam on grass)
+- Queen's Club
+- Halle Open
+
+<Tip>
+  Grass court season is brief (June-July), so players have limited time to adapt. Some players skip grass entirely to prepare for hard court season.
+</Tip>
+
+### Surface Transition Challenges
+
+```python
+def calculate_surface_transition_penalty(player_id, from_surface, to_surface, days_gap):
+    """
+    Players transitioning between surfaces often underperform initially
+    """
+    transition_difficulty = {
+        ('clay', 'grass'): 0.15,      # Hardest transition
+        ('grass', 'clay'): 0.15,
+        ('clay', 'hard'): 0.08,
+        ('hard', 'clay'): 0.08,
+        ('grass', 'hard'): 0.10,
+        ('hard', 'grass'): 0.10,
+    }
+    
+    base_penalty = transition_difficulty.get((from_surface, to_surface), 0)
+    
+    # Penalty reduces with more adaptation time
+    if days_gap > 14:
+        time_adjustment = 0.5
+    elif days_gap > 7:
+        time_adjustment = 0.7
+    else:
+        time_adjustment = 1.0
+    
+    final_penalty = base_penalty * time_adjustment
+    
+    return final_penalty
+```
+
+## Match Formats
+
+### Best-of-Three vs Best-of-Five
+
+**Best-of-Three (First to 2 sets):**
+- All WTA matches
+- ATP Masters 1000, ATP 500, ATP 250
+- Grand Slam women's matches
+- Grand Slam men's early rounds (at some tournaments)
+
+**Best-of-Five (First to 3 sets):**
+- Grand Slam men's matches (all rounds)
+- Davis Cup matches (varies by round)
+- ATP Finals (historically, now best-of-three)
+
+<Info>
+  Match format significantly impacts probability calculations. Upsets are more likely in best-of-three, where variance has greater effect. Best-of-five favors the higher-ranked player as the match allows more time for class to prevail.
+</Info>
+
+### Set and Game Scoring
+
+```python
+scoring_system = {
+    'points': ['0', '15', '30', '40', 'Game'],
+    'deuce': 'Must win by 2 points',
+    'set': 'First to 6 games (must win by 2)',
+    'tiebreak': 'First to 7 points at 6-6 in games',
+    'final_set': {
+        'Grand Slams': 'Varies by tournament',
+        'Australian Open': 'Tiebreak at 6-6',
+        'French Open': 'No tiebreak (must win by 2)',
+        'Wimbledon': 'Tiebreak at 12-12',
+        'US Open': 'Tiebreak at 6-6'
+    }
+}
+```
+
+## Tournament Categories
+
+### Grand Slams
+
+The four most prestigious tournaments:
+
+| Tournament | Surface | Location | Timing | Prize Money |
+|------------|---------|----------|--------|-------------|
+| **Australian Open** | Hard (Plexicushion) | Melbourne | January | $86.5M AUD |
+| **French Open** | Clay | Paris | May-June | €49.6M EUR |
+| **Wimbledon** | Grass | London | June-July | £44.7M GBP |
+| **US Open** | Hard (DecoTurf) | New York | August-September | $65M USD |
+
+**Grand Slam Characteristics:**
+
+- Draw size: 128 players (singles)
+- Best-of-five sets (men)
+- Two weeks duration
+- Highest ranking points (2000)
+- No coaching allowed during matches (except French Open)
+
+<Note>
+  Grand Slam performance often differs from regular tour events. The two-week duration, best-of-five format, and prestige create unique dynamics.
+</Note>
+
+### Masters 1000 / WTA 1000
+
+**ATP Masters 1000:**
+
+9 mandatory tournaments for top players:
+
+- Indian Wells (hard)
+- Miami (hard)
+- Monte-Carlo (clay) - not mandatory
+- Madrid (clay)
+- Rome (clay)
+- Canada (hard)
+- Cincinnati (hard)
+- Shanghai (hard)
+- Paris (hard)
+
+**WTA 1000:**
+
+Equivalent tier for women's tour with similar prestige and points.
+
+### Lower-Tier Tournaments
+
+**ATP 500 / WTA 500:**
+- 1 week duration
+- 32-48 player draws
+- Important for ranking but less prestigious
+
+**ATP 250 / WTA 250:**
+- Entry-level tour events
+- Opportunities for lower-ranked players
+- Testing ground for rising stars
+
+## Data Sources and Integration
+
+### API-Tennis Integration
+
+OddsEngine uses API-Tennis as its primary data source:
+
+```python
+import httpx
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/fetch-player-stats")
+async def fetch_player_stats(player_id: str):
+    """
+    Asynchronously fetch player data from API-Tennis
+    """
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api-tennis.com/v1/players/{player_id}",
+            headers={"Authorization": f"Bearer {API_KEY}"}
+        )
+        
+        if response.status_code == 200:
+            player_data = response.json()
+            return player_data
+        else:
+            # Fallback to mock data provider
+            return get_mock_player_data(player_id)
+```
+
+<Tip>
+  API-Tennis specializes exclusively in tennis, providing more detailed and accurate data than general sports APIs. The clean JSON responses integrate seamlessly with FastAPI's asynchronous architecture.
+</Tip>
+
+### Data Refresh Strategy
+
+```python
+refresh_schedule = {
+    'player_rankings': 'weekly',           # Updated Monday mornings
+    'match_results': 'daily',              # End of day
+    'live_scores': 'real-time',            # If live feature enabled
+    'player_stats': 'post-tournament',     # After tournaments conclude
+    'historical_data': 'monthly',          # Periodic backfill
+}
+```
+
+### Rate Limiting
+
+API-Tennis free tier: 1,000 requests/month
+
+```python
+from datetime import datetime, timedelta
+import asyncio
+
+class RateLimiter:
+    def __init__(self, max_requests=1000, period_days=30):
+        self.max_requests = max_requests
+        self.period_days = period_days
+        self.requests = []
+    
+    async def acquire(self):
+        """
+        Wait if necessary to respect rate limits
+        """
+        now = datetime.now()
+        cutoff = now - timedelta(days=self.period_days)
+        
+        # Remove old requests
+        self.requests = [r for r in self.requests if r > cutoff]
+        
+        if len(self.requests) >= self.max_requests:
+            # Calculate wait time
+            oldest_request = min(self.requests)
+            wait_until = oldest_request + timedelta(days=self.period_days)
+            wait_seconds = (wait_until - now).total_seconds()
+            
+            if wait_seconds > 0:
+                await asyncio.sleep(wait_seconds)
+        
+        self.requests.append(now)
+```
+
+<Info>
+  When API limits are reached, OddsEngine automatically falls back to the mock data provider, ensuring uninterrupted functionality during development and testing.
+</Info>
+
+## Tennis-Specific Metrics
+
+### Service Statistics
+
+```python
+service_metrics = {
+    'first_serve_percentage': 'Percentage of first serves in',
+    'first_serve_points_won': 'Points won when first serve lands',
+    'second_serve_points_won': 'Points won on second serve',
+    'aces': 'Unreturned serves',
+    'double_faults': 'Two consecutive faults',
+    'break_points_saved': 'Percentage of break points defended'
+}
+```
+
+**Service Importance:**
+- Grass/fast hard courts: Service dominates (60-70% of points on serve)
+- Clay: More balanced, returns more effective (55-60% of points on serve)
+
+### Return Statistics
+
+```python
+return_metrics = {
+    'first_serve_return_points_won': 'Breaking down first serve',
+    'second_serve_return_points_won': 'Attacking second serve',
+    'break_points_converted': 'Percentage of break opportunities taken',
+    'return_games_won': 'Games broken',
+}
+```
+
+### Surface-Specific Stats
+
+```python
+def get_player_surface_profile(player_id):
+    """
+    Comprehensive surface performance profile
+    """
+    surfaces = ['clay', 'hard', 'grass']
+    profile = {}
+    
+    for surface in surfaces:
+        matches = get_player_matches(player_id, surface=surface)
+        
+        profile[surface] = {
+            'win_rate': calculate_win_rate(matches),
+            'total_matches': len(matches),
+            'titles': count_titles(matches),
+            'avg_ranking_of_opponents': calculate_avg_opponent_rank(matches),
+            'recent_form': get_recent_form(matches, last_n=10)
+        }
+    
+    return profile
+```
+
+## Data Quality Considerations
+
+### Completeness
+
+<Note>
+  Data quality varies by tournament level. Grand Slams and Masters 1000 events have comprehensive statistics, while ATP 250 and Challenger events may have limited data.
+</Note>
+
+**Data Availability:**
+
+- **Grand Slams**: Full ball-by-ball tracking, Hawkeye data
+- **Masters 1000**: Comprehensive match statistics
+- **ATP 500/250**: Basic statistics
+- **Challengers**: Often limited to score only
+
+### Historical Data Depth
+
+```python
+data_depth = {
+    'rankings': 'Since 1973 (ATP), 1975 (WTA)',
+    'match_results': 'Complete from 1990s onward',
+    'detailed_stats': 'Comprehensive from 2010+',
+    'point_by_point': 'Recent years, major tournaments only'
+}
+```
+
+## Next Steps
+
+To understand how this tennis data is used:
+
+- See [Data Model](/concepts/data-model) for data structure details
+- See [Probability Engine](/concepts/probability-engine) for calculation methods

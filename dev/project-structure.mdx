@@ -1,0 +1,685 @@
+---
+title: "Project Structure"
+description: "Understanding OddsEngine's directory organization and code layout"
+icon: "folder-tree"
+---
+
+## Overview
+
+OddsEngine follows a **standardized project structure** based on industry best practices for Python applications. The layout separates source code, configuration, documentation, and automation scripts into logical directories.
+
+<Tip>
+This structure follows the **FIS (Fundamentos de Ingeniería de Software) Boilerplate** standard, ensuring consistency across academic projects and facilitating collaboration.
+</Tip>
+
+## Root Directory Layout
+
+```bash
+OddsEngine/
+├── .github/              # GitHub-specific configurations
+├── conf/                 # Configuration files
+├── docs/                 # Project documentation
+├── jupyter/              # Jupyter notebooks and datasets
+├── scripts/              # Automation scripts
+├── src/                  # Source code (main + tests)
+├── temp/                 # Temporary files (gitignored)
+├── .gitignore            # Git ignore rules
+├── README.md             # Project overview
+├── LICENSE               # Apache 2.0 license
+├── CHANGELOG.md          # Version history
+├── CONTRIBUTING.md       # Contribution guidelines
+├── Dockerfile            # Container image definition
+├── docker-compose.yml    # Multi-container orchestration
+└── Makefile              # Build automation commands
+```
+
+---
+
+## Directory Breakdown
+
+### `.github/` - GitHub Integration
+
+Contains GitHub-specific configurations for automation, issue tracking, and CI/CD.
+
+```bash
+.github/
+├── ISSUE_TEMPLATE/
+│   ├── bug_report.md         # Bug report template
+│   └── feature_request.md    # Feature request template
+├── PULL_REQUEST_TEMPLATE.md  # PR description template
+└── workflows/
+    ├── ci.yml                # Continuous Integration pipeline
+    └── cd.yml                # Continuous Deployment pipeline
+```
+
+**Purpose**: Standardizes team workflows and automates quality checks.
+
+**CI Pipeline (`ci.yml`)**:
+- Runs on every push and pull request
+- Executes linting (flake8, pylint)
+- Runs unit tests (pytest)
+- Generates test coverage reports
+- Performs SonarQube analysis
+
+**CD Pipeline (`cd.yml`)**:
+- Triggers on merges to `main` branch
+- Builds Docker images
+- Pushes images to container registry
+- Deploys to staging environment
+
+<Note>
+**Why Templates?** GitHub issue templates ensure bug reports include reproduction steps, environment details, and expected vs. actual behavior—critical information for debugging.
+</Note>
+
+---
+
+### `conf/` - Configuration Files
+
+Stores application configuration files for different environments.
+
+```bash
+conf/
+├── config.yaml           # Main application config
+├── settings.json         # Environment-specific settings
+└── .gitkeep              # Keeps directory in Git
+```
+
+**Example `config.yaml`**:
+```yaml
+api:
+  tennis:
+    base_url: "https://api-tennis.com/v1"
+    api_key: "${API_TENNIS_KEY}"  # Read from environment variable
+    timeout: 10
+    max_retries: 3
+
+database:
+  host: "localhost"
+  port: 1521
+  service_name: "xe"
+  user: "oddsengine"
+  password: "${DB_PASSWORD}"
+
+engine:
+  probability:
+    min_matches_required: 10  # Minimum match history for calculations
+    confidence_threshold: 0.6  # Minimum confidence to show results
+```
+
+**Why Separate Config?**
+- **Version Control**: Track configuration changes over time
+- **Environment Isolation**: Different settings for dev/test/prod
+- **Security**: Sensitive values (API keys) stored as env vars, not hardcoded
+
+<Tip>
+Use **environment variables** for secrets (API keys, database passwords) and reference them in config files with `${VARIABLE_NAME}` syntax. Never commit secrets to Git.
+</Tip>
+
+---
+
+### `docs/` - Project Documentation
+
+Contains all project documentation, including research, architecture diagrams, and user guides.
+
+```bash
+docs/
+├── research/
+│   └── tennis_api_selection.md  # API evaluation document
+├── architecture/
+│   ├── system_design.md
+│   └── database_schema.md
+└── user_guide/
+    ├── installation.md
+    └── usage.md
+```
+
+**Key Documents**:
+
+- **`research/tennis_api_selection.md`**: Detailed analysis of API-Tennis vs. alternatives (see `docs/research/tennis_api_selection.md:1`)
+- **Architecture diagrams**: Visual representations of system components and data flow
+- **User guides**: Step-by-step instructions for installing, configuring, and using OddsEngine
+
+<Note>
+This `docs/` directory in the source repository is separate from the Mintlify documentation site you're currently reading. The source `docs/` contains internal project documentation, while Mintlify provides user-facing docs.
+</Note>
+
+---
+
+### `jupyter/` - Data Analysis Workspace
+
+Houses Jupyter notebooks for exploratory data analysis and dataset storage.
+
+```bash
+jupyter/
+├── notebooks/
+│   ├── exploration.ipynb         # Initial data exploration
+│   ├── analysis.ipynb            # Probability model analysis
+│   ├── player_statistics.ipynb   # Player performance trends
+│   └── model_evaluation.ipynb    # Testing probability accuracy
+└── datasets/
+    ├── atp_matches_2024.csv      # Historical ATP match data
+    ├── wta_matches_2024.csv      # Historical WTA match data
+    └── player_rankings.csv       # Player ranking history
+```
+
+**Workflow**:
+
+1. **Exploration** (`exploration.ipynb`): Load raw API data, visualize distributions, identify patterns
+2. **Analysis** (`analysis.ipynb`): Prototype probability algorithms using Pandas
+3. **Model Evaluation** (`model_evaluation.ipynb`): Test model accuracy against historical results
+4. **Productionization**: Move validated algorithms from notebooks to `src/main/python/engine/`
+
+**Example Notebook Usage**:
+```python
+# jupyter/notebooks/exploration.ipynb
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load historical match data
+matches = pd.read_csv('../datasets/atp_matches_2024.csv')
+
+# Analyze win rates by surface
+surface_wins = matches.groupby(['surface', 'winner']).size().unstack()
+surface_wins.plot(kind='bar', stacked=True)
+plt.title('Match Outcomes by Surface Type')
+plt.show()
+
+# Calculate player-specific win rates
+player_stats = matches.groupby('player_id').agg({
+    'result': lambda x: (x == 'win').mean(),
+    'match_id': 'count'
+}).rename(columns={'result': 'win_rate', 'match_id': 'total_matches'})
+```
+
+<Tip>
+**Development Workflow**: Use Jupyter notebooks to rapidly prototype and visualize probability models. Once validated, refactor the code into production modules in `src/main/python/`. This iterative approach reduces bugs and improves model quality.
+</Tip>
+
+---
+
+### `scripts/` - Automation Scripts
+
+Contains shell scripts for common development tasks.
+
+```bash
+scripts/
+├── setup.sh      # Environment setup (install dependencies, create DB)
+├── deploy.sh     # Deployment automation
+└── test.sh       # Run test suite with coverage
+```
+
+**Example `setup.sh`**:
+```bash
+#!/bin/bash
+# Setup development environment
+
+set -e  # Exit on error
+
+echo "Setting up OddsEngine development environment..."
+
+# Create Python virtual environment
+python3.10 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# Setup Oracle database (via Docker)
+docker-compose up -d database
+echo "Waiting for database to initialize..."
+sleep 30
+
+# Run database migrations
+python src/main/python/database/migrations/init_schema.py
+
+echo "Setup complete! Run 'docker-compose up backend' to start the server."
+```
+
+**Example `test.sh`**:
+```bash
+#!/bin/bash
+# Run test suite with coverage reporting
+
+set -e
+
+echo "Running OddsEngine test suite..."
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Run pytest with coverage
+pytest src/test/python/ \
+  --cov=src/main/python \
+  --cov-report=html \
+  --cov-report=term-missing \
+  --verbose
+
+echo "Coverage report generated at htmlcov/index.html"
+```
+
+**Why Scripts?**
+- **Onboarding**: New team members run `./scripts/setup.sh` to configure their environment
+- **Consistency**: Everyone uses the same setup process, reducing "works on my machine" issues
+- **CI/CD Integration**: GitHub Actions call these scripts for automated testing and deployment
+
+---
+
+### `src/` - Source Code
+
+The heart of the project, containing all application code and tests.
+
+```bash
+src/
+├── main/
+│   ├── python/
+│   │   ├── api/              # FastAPI routes and endpoints
+│   │   ├── engine/           # Probability calculation engine
+│   │   ├── services/         # External API clients (HTTPX)
+│   │   ├── database/         # Database models and repositories
+│   │   ├── ui/               # PyQt desktop interface
+│   │   ├── models/           # Pydantic data models
+│   │   ├── utils/            # Helper functions
+│   │   └── main.py           # Application entry point
+│   └── resources/
+│       ├── ui/               # Qt Designer .ui files
+│       └── static/           # Images, icons, stylesheets
+└── test/
+    ├── python/
+    │   ├── unit/             # Unit tests
+    │   ├── integration/      # Integration tests
+    │   ├── conftest.py       # Pytest fixtures
+    │   └── test_*.py         # Test modules
+    └── resources/
+        └── fixtures/         # Test data (mock API responses)
+```
+
+#### `src/main/python/` - Production Code
+
+##### `api/` - FastAPI Backend
+
+RESTful API endpoints for frontend communication.
+
+```python
+# src/main/python/api/routes/players.py
+from fastapi import APIRouter, HTTPException, Depends
+from services.tennis_api_client import TennisAPIClient
+from models.player import PlayerResponse
+
+router = APIRouter(prefix="/api/players", tags=["players"])
+
+@router.get("/{player_id}", response_model=PlayerResponse)
+async def get_player_details(player_id: str, client: TennisAPIClient = Depends()):
+    """Retrieve detailed player statistics"""
+    try:
+        data = await client.get_player_stats(player_id)
+        return PlayerResponse(**data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch player: {e}")
+```
+
+##### `engine/` - Probability Calculator
+
+Core analytical logic for bet probability calculations.
+
+```python
+# src/main/python/engine/probability_calculator.py
+import pandas as pd
+from typing import List, Dict
+
+class ProbabilityEngine:
+    def calculate_combined_probability(self, bets: List[Dict]) -> Dict:
+        """Calculate combined probability for multiple bets"""
+        df = pd.DataFrame(bets)
+        combined = df['probability'].prod()
+        return {
+            "individual_probabilities": df['probability'].tolist(),
+            "combined_probability": float(combined),
+            "confidence_score": self._calculate_confidence(df)
+        }
+```
+
+##### `services/` - External Integrations
+
+HTTPX clients for API-Tennis and mock data providers.
+
+```python
+# src/main/python/services/tennis_api_client.py
+import httpx
+from typing import Dict
+
+class TennisAPIClient:
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.base_url = "https://api-tennis.com/v1"
+        
+    async def get_match_stats(self, match_id: str) -> Dict:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/matches/{match_id}",
+                headers={"X-API-Key": self.api_key}
+            )
+            return response.json()
+```
+
+##### `database/` - Data Persistence
+
+SQLAlchemy models and repository pattern for Oracle database interactions.
+
+```python
+# src/main/python/database/models/match.py
+from sqlalchemy import Column, String, Date, Float
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class Match(Base):
+    __tablename__ = 'matches'
+    
+    match_id = Column(String(50), primary_key=True)
+    match_date = Column(Date, nullable=False)
+    player_id = Column(String(50), nullable=False)
+    opponent_id = Column(String(50), nullable=False)
+    result = Column(String(10))  # 'win' or 'loss'
+    surface = Column(String(20))  # 'clay', 'hard', 'grass'
+    tournament = Column(String(100))
+```
+
+##### `ui/` - PyQt Desktop Interface
+
+Desktop application widgets and windows.
+
+```python
+# src/main/python/ui/main_window.py
+from PyQt5.QtWidgets import QMainWindow, QPushButton
+from PyQt5.QtCore import pyqtSlot
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("OddsEngine - Tennis Betting Analysis")
+        self.setup_ui()
+        
+    def setup_ui(self):
+        # Load UI from Qt Designer file
+        uic.loadUi('src/main/resources/ui/main_window.ui', self)
+        
+        # Connect signals to slots
+        self.calculate_button.clicked.connect(self.on_calculate_clicked)
+        
+    @pyqtSlot()
+    async def on_calculate_clicked(self):
+        # Fetch match data and calculate probabilities
+        match_ids = self.get_selected_matches()
+        result = await self.backend_client.analyze_bets(match_ids)
+        self.display_results(result)
+```
+
+##### `models/` - Data Models
+
+Pydantic models for request/response validation.
+
+```python
+# src/main/python/models/player.py
+from pydantic import BaseModel, Field
+from typing import Optional
+
+class PlayerResponse(BaseModel):
+    player_id: str
+    name: str
+    ranking: int = Field(..., ge=1)
+    country: str
+    win_rate: float = Field(..., ge=0.0, le=1.0)
+    recent_form: Optional[str] = None  # 'excellent', 'good', 'poor'
+```
+
+#### `src/main/resources/` - Static Assets
+
+- **`ui/*.ui`**: Qt Designer files (XML format) defining interface layouts
+- **`static/icons/`**: Application icons and images
+- **`static/styles.qss`**: Qt StyleSheets for UI theming
+
+#### `src/test/python/` - Test Suite
+
+```python
+# src/test/python/unit/test_probability_engine.py
+import pytest
+from engine.probability_calculator import ProbabilityEngine
+
+@pytest.fixture
+def sample_bets():
+    return [
+        {"match_id": "1", "probability": 0.8},
+        {"match_id": "2", "probability": 0.7}
+    ]
+
+def test_combined_probability(sample_bets):
+    engine = ProbabilityEngine()
+    result = engine.calculate_combined_probability(sample_bets)
+    
+    # 0.8 * 0.7 = 0.56
+    assert result["combined_probability"] == pytest.approx(0.56, abs=0.01)
+```
+
+<Tip>
+**Test Organization**: Separate unit tests (test individual functions) from integration tests (test multiple components together). Use `conftest.py` to define reusable test fixtures (mock data, database connections, etc.).
+</Tip>
+
+---
+
+### `temp/` - Temporary Files
+
+Stores temporary files during development (cache, logs, intermediate data).
+
+```bash
+temp/
+├── temp_file.txt
+└── temp_data/
+    ├── temp1.tmp
+    └── temp2.tmp
+```
+
+**Important**: This directory is listed in `.gitignore` and never committed to version control.
+
+---
+
+## Root Configuration Files
+
+### `Dockerfile`
+
+Defines the container image for the FastAPI backend.
+
+```dockerfile
+FROM python:3.10-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies for Oracle client
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libaio1 \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Oracle Instant Client
+RUN wget https://download.oracle.com/otn_software/linux/instantclient/instantclient-basic-linux.x64-21.1.0.0.0.zip \
+    && unzip instantclient-basic-linux.x64-21.1.0.0.0.zip -d /opt/oracle \
+    && rm instantclient-basic-linux.x64-21.1.0.0.0.zip
+
+ENV LD_LIBRARY_PATH=/opt/oracle/instantclient_21_1:$LD_LIBRARY_PATH
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY src/main/python/ ./src/main/python/
+COPY conf/ ./conf/
+
+# Expose FastAPI port
+EXPOSE 8000
+
+# Run application
+CMD ["uvicorn", "src.main.python.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+```
+
+### `docker-compose.yml`
+
+Orchestrates multi-container deployment (backend + database).
+
+```yaml
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: oddsengine-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: oracle://oddsengine:${DB_PASSWORD}@database:1521/xe
+      API_TENNIS_KEY: ${API_TENNIS_KEY}
+    volumes:
+      - ./conf:/app/conf:ro
+      - ./src:/app/src:ro
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - oddsengine-network
+
+  database:
+    image: container-registry.oracle.com/database/express:21.3.0-xe
+    container_name: oddsengine-db
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_PWD: ${DB_PASSWORD}
+      ORACLE_CHARACTERSET: AL32UTF8
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "sqlplus", "-L", "system/${DB_PASSWORD}@//localhost:1521/xe", "@healthcheck.sql"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - oddsengine-network
+
+volumes:
+  oracle_data:
+    driver: local
+
+networks:
+  oddsengine-network:
+    driver: bridge
+```
+
+### `Makefile`
+
+Automation commands for common tasks.
+
+```makefile
+.PHONY: setup test run clean
+
+# Setup development environment
+setup:
+	./scripts/setup.sh
+
+# Run test suite
+test:
+	./scripts/test.sh
+
+# Start application (Docker)
+run:
+	docker-compose up --build
+
+# Stop application
+stop:
+	docker-compose down
+
+# Clean temporary files and caches
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+	rm -rf temp/*
+	rm -rf .pytest_cache
+	rm -rf htmlcov
+```
+
+**Usage**: Run `make setup` to configure the environment, `make test` to run tests, `make run` to start the application.
+
+---
+
+## Code Organization Principles
+
+### 1. Separation of Concerns
+
+**API layer** (`api/`) handles HTTP requests/responses.  
+**Engine layer** (`engine/`) performs business logic (probability calculations).  
+**Service layer** (`services/`) manages external dependencies (API-Tennis).  
+**Database layer** (`database/`) handles data persistence.
+
+This separation allows independent testing and modification of each layer.
+
+### 2. Test-Driven Structure
+
+Every production module in `src/main/python/` has a corresponding test file in `src/test/python/`. For example:
+
+- `src/main/python/engine/probability_calculator.py` → `src/test/python/unit/test_probability_calculator.py`
+
+### 3. Configuration Over Code
+
+Settings are stored in `conf/config.yaml` rather than hardcoded, making it easy to change API endpoints, database credentials, or timeout values without modifying code.
+
+### 4. Resource Isolation
+
+Static assets (UI files, images) are kept in `src/main/resources/`, separate from Python code, preventing accidental modification during code refactoring.
+
+---
+
+## Navigating the Codebase
+
+### Finding Specific Functionality
+
+| Task | Location |
+|------|----------|
+| **Add a new API endpoint** | `src/main/python/api/routes/` |
+| **Modify probability calculations** | `src/main/python/engine/` |
+| **Change API-Tennis integration** | `src/main/python/services/tennis_api_client.py` |
+| **Update database schema** | `src/main/python/database/models/` |
+| **Add UI components** | `src/main/python/ui/` + `src/main/resources/ui/` |
+| **Write new tests** | `src/test/python/` |
+| **Change configuration** | `conf/config.yaml` |
+| **Add automation script** | `scripts/` |
+| **Prototype new algorithm** | `jupyter/notebooks/` |
+
+### File Naming Conventions
+
+- **Python modules**: `snake_case.py` (e.g., `probability_calculator.py`)
+- **Classes**: `PascalCase` (e.g., `ProbabilityEngine`)
+- **Functions/methods**: `snake_case` (e.g., `calculate_combined_probability`)
+- **Test files**: `test_*.py` (e.g., `test_probability_engine.py`)
+- **Constants**: `UPPER_SNAKE_CASE` (e.g., `API_BASE_URL`)
+
+<Tip>
+**Quick Start for New Developers**:
+
+1. Read `README.md` for project overview
+2. Run `make setup` to configure environment
+3. Explore `src/main/python/main.py` to understand application entry point
+4. Check `jupyter/notebooks/exploration.ipynb` to see data analysis workflow
+5. Run `make test` to verify everything works
+</Tip>
+
+---
+
+## Related Documentation
+
+- [System Architecture](/dev/architecture) - How components interact
+- [Technology Stack](/dev/stack) - Why we chose these technologies
+- [Setup Guide](/getting-started/installation) - Step-by-step installation instructions

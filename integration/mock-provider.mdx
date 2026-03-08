@@ -1,0 +1,427 @@
+---
+title: 'Mock Data Provider'
+description: 'Local data simulation and fallback mechanism for OddsEngine development'
+---
+
+## Overview
+
+The **mock data provider** (`mock_data_provider.py`) is OddsEngine's fallback mechanism that simulates API-Tennis.com responses locally. It ensures the FastAPI dashboard continues functioning when:
+
+- The external API fails or is unavailable
+- Rate limits (1,000 requests/month) are exceeded
+- Development is performed offline
+- Testing requires predictable data
+
+<Note>
+  The mock provider simulates HTTPX network functions, returning local data with the same structure as API-Tennis responses.
+</Note>
+
+## When It Activates
+
+The mock provider automatically activates in the following scenarios:
+
+### 1. API Unavailability
+
+```python
+import httpx
+from mock_data_provider import MockTennisAPI
+
+async def get_player_with_fallback(player_id: str):
+    """Attempt API call with automatic fallback."""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://api.api-tennis.com/v1/players/{player_id}",
+                timeout=5.0
+            )
+            response.raise_for_status()
+            return response.json()
+    except (httpx.RequestError, httpx.HTTPStatusError) as e:
+        # API failed - switch to mock provider
+        print(f"API unavailable: {e}. Using mock data.")
+        mock_api = MockTennisAPI()
+        return mock_api.get_player(player_id)
+```
+
+### 2. Rate Limit Exceeded
+
+```python
+async def get_data_with_rate_limit_check(endpoint: str):
+    """Check rate limits before making API call."""
+    rate_tracker = RateLimitTracker(monthly_limit=1000)
+    
+    if not rate_tracker.can_make_request():
+        # Limit exceeded - use mock provider
+        print("Rate limit exceeded. Switching to mock provider.")
+        mock_api = MockTennisAPI()
+        return mock_api.get_data(endpoint)
+    
+    # Make real API call
+    rate_tracker.record_request()
+    return await make_api_call(endpoint)
+```
+
+### 3. Development Mode
+
+```python
+import os
+from mock_data_provider import MockTennisAPI
+
+def get_tennis_client():
+    """Return mock or real client based on environment."""
+    if os.getenv("ENVIRONMENT") == "development":
+        return MockTennisAPI()
+    else:
+        return TennisAPIClient()
+```
+
+### 4. Testing
+
+```python
+import pytest
+from mock_data_provider import MockTennisAPI
+
+@pytest.fixture
+def tennis_api():
+    """Always use mock provider in tests."""
+    return MockTennisAPI()
+
+def test_player_analysis(tennis_api):
+    """Test player analysis with predictable mock data."""
+    player_data = tennis_api.get_player("12345")
+    assert player_data["name"] == "Roger Federer"
+    assert player_data["stats"]["win_percentage"] > 80
+```
+
+## Mock Data Structure
+
+The mock provider returns data with identical structure to API-Tennis responses:
+
+### Mock Player Data
+
+```python
+class MockTennisAPI:
+    def get_player(self, player_id: str):
+        """Return mock player data."""
+        return {
+            "player_id": player_id,
+            "name": self._get_mock_player_name(player_id),
+            "country": "ESP",
+            "ranking": {
+                "current": 1,
+                "best": 1,
+                "points": 10000
+            },
+            "stats": {
+                "wins": 1050,
+                "losses": 210,
+                "win_percentage": 83.3,
+                "titles": 92,
+                "grand_slams": 22
+            },
+            "surface_stats": {
+                "hard": {"wins": 520, "losses": 98, "win_rate": 84.1},
+                "clay": {"wins": 450, "losses": 42, "win_rate": 91.5},
+                "grass": {"wins": 80, "losses": 70, "win_rate": 53.3}
+            },
+            "recent_form": ["W", "W", "W", "L", "W"],
+            "last_updated": "2026-03-08T00:00:00Z"
+        }
+```
+
+### Mock Match Data
+
+```python
+class MockTennisAPI:
+    def get_match(self, match_id: str):
+        """Return mock match data."""
+        return {
+            "match_id": match_id,
+            "tournament": "Australian Open",
+            "round": "Semifinals",
+            "surface": "hard",
+            "date": "2026-01-24",
+            "player1": {
+                "id": "12345",
+                "name": "Rafael Nadal",
+                "seed": 1,
+                "ranking": 1
+            },
+            "player2": {
+                "id": "54321",
+                "name": "Novak Djokovic",
+                "seed": 2,
+                "ranking": 2
+            },
+            "score": "7-6(7-4), 6-4, 6-3",
+            "winner": "12345",
+            "stats": {
+                "duration": "3h 15m",
+                "aces": [12, 8],
+                "double_faults": [3, 2],
+                "first_serve_percentage": [72, 68],
+                "break_points_converted": ["4/8", "2/6"],
+                "total_points_won": [115, 98]
+            },
+            "status": "completed"
+        }
+```
+
+## Implementation Details
+
+### Basic Mock Provider Class
+
+```python
+import json
+from typing import Dict, Any, Optional
+from pathlib import Path
+
+class MockTennisAPI:
+    """Simulates API-Tennis.com responses with local data."""
+    
+    def __init__(self, data_dir: str = "./mock_data"):
+        self.data_dir = Path(data_dir)
+        self._load_mock_data()
+    
+    def _load_mock_data(self):
+        """Load mock data from JSON files."""
+        self.players = self._load_json("players.json")
+        self.matches = self._load_json("matches.json")
+        self.tournaments = self._load_json("tournaments.json")
+        self.rankings = self._load_json("rankings.json")
+    
+    def _load_json(self, filename: str) -> Dict:
+        """Load JSON file with fallback to empty dict."""
+        filepath = self.data_dir / filename
+        if filepath.exists():
+            with open(filepath, 'r') as f:
+                return json.load(f)
+        return {}
+    
+    def get_player(self, player_id: str) -> Dict[str, Any]:
+        """Get mock player data by ID."""
+        return self.players.get(player_id, self._generate_player(player_id))
+    
+    def get_match(self, match_id: str) -> Dict[str, Any]:
+        """Get mock match data by ID."""
+        return self.matches.get(match_id, self._generate_match(match_id))
+    
+    def get_rankings(self, tour: str = "atp") -> list:
+        """Get mock rankings data."""
+        return self.rankings.get(tour, [])
+    
+    def _generate_player(self, player_id: str) -> Dict[str, Any]:
+        """Generate realistic player data on the fly."""
+        # Implementation for dynamic generation
+        pass
+    
+    def _generate_match(self, match_id: str) -> Dict[str, Any]:
+        """Generate realistic match data on the fly."""
+        # Implementation for dynamic generation
+        pass
+```
+
+### Integration with HTTPX Client
+
+```python
+import httpx
+from typing import Optional
+from mock_data_provider import MockTennisAPI
+
+class TennisAPIClient:
+    """API client with automatic mock fallback."""
+    
+    def __init__(self, use_mock: bool = False):
+        self.use_mock = use_mock
+        self.mock_api = MockTennisAPI() if use_mock else None
+        self.api_key = os.getenv("API_TENNIS_KEY")
+        self.base_url = os.getenv("API_TENNIS_BASE_URL")
+    
+    async def get_player_data(self, player_id: str) -> Dict[str, Any]:
+        """Fetch player data with automatic fallback."""
+        if self.use_mock:
+            return self.mock_api.get_player(player_id)
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.base_url}/players/{player_id}",
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    timeout=10.0
+                )
+                response.raise_for_status()
+                return response.json()
+        except Exception as e:
+            print(f"API call failed: {e}. Using mock provider.")
+            if not self.mock_api:
+                self.mock_api = MockTennisAPI()
+            return self.mock_api.get_player(player_id)
+```
+
+## Configuration
+
+### Environment Variables
+
+```bash
+# .env configuration
+USE_MOCK_PROVIDER=false          # Set to 'true' to always use mock data
+MOCK_DATA_DIR=./data/mock        # Directory containing mock JSON files
+API_FALLBACK_ENABLED=true        # Enable automatic fallback to mock
+ALERT_ON_FALLBACK=true           # Log warnings when using mock data
+```
+
+### FastAPI Startup Configuration
+
+```python
+from fastapi import FastAPI
+import os
+
+app = FastAPI()
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize API client based on configuration."""
+    use_mock = os.getenv("USE_MOCK_PROVIDER", "false").lower() == "true"
+    
+    if use_mock:
+        print("⚠️  Running with MOCK data provider")
+        app.state.tennis_client = TennisAPIClient(use_mock=True)
+    else:
+        print("✓ Running with API-Tennis.com")
+        app.state.tennis_client = TennisAPIClient(use_mock=False)
+```
+
+## Mock Data Files
+
+Organize mock data in JSON files for easy maintenance:
+
+```
+data/mock/
+├── players.json        # Mock player profiles
+├── matches.json        # Mock match results
+├── tournaments.json    # Mock tournament data
+└── rankings.json       # Mock ATP/WTA rankings
+```
+
+### Example: players.json
+
+```json
+{
+  "12345": {
+    "player_id": "12345",
+    "name": "Rafael Nadal",
+    "country": "ESP",
+    "ranking": {"current": 1, "best": 1},
+    "stats": {
+      "wins": 1050,
+      "losses": 210,
+      "win_percentage": 83.3
+    }
+  },
+  "54321": {
+    "player_id": "54321",
+    "name": "Novak Djokovic",
+    "country": "SRB",
+    "ranking": {"current": 2, "best": 1},
+    "stats": {
+      "wins": 1020,
+      "losses": 205,
+      "win_percentage": 83.2
+    }
+  }
+}
+```
+
+## Testing with Mock Provider
+
+<Warning>
+  Always use the mock provider for unit tests to avoid consuming API quota and ensure test reliability.
+</Warning>
+
+### Unit Test Example
+
+```python
+import pytest
+from mock_data_provider import MockTennisAPI
+from probability_engine import calculate_match_probability
+
+@pytest.fixture
+def mock_api():
+    return MockTennisAPI()
+
+def test_probability_calculation(mock_api):
+    """Test probability engine with mock data."""
+    player1 = mock_api.get_player("12345")
+    player2 = mock_api.get_player("54321")
+    
+    probability = calculate_match_probability(player1, player2, surface="clay")
+    
+    assert 0 <= probability <= 100
+    assert isinstance(probability, float)
+
+def test_fallback_mechanism(mock_api):
+    """Test that fallback returns valid data."""
+    # Simulate API failure
+    mock_data = mock_api.get_player("99999")  # Non-existent player
+    
+    assert mock_data is not None
+    assert "player_id" in mock_data
+    assert "stats" in mock_data
+```
+
+## Benefits of Mock Provider
+
+1. **Development Continuity**: Work offline without API access
+2. **Rate Limit Protection**: Conserve API quota for production
+3. **Predictable Testing**: Consistent data for automated tests
+4. **Faster Iteration**: No network latency during development
+5. **Error Simulation**: Test error handling without breaking things
+6. **Cost Efficiency**: Stay within free tier limits
+
+## Transition from Mock to Production
+
+When moving from development to production:
+
+```python
+# Development (using mock)
+USE_MOCK_PROVIDER=true
+ENVIRONMENT=development
+
+# Production (using real API)
+USE_MOCK_PROVIDER=false
+ENVIRONMENT=production
+API_TENNIS_KEY=your_production_key
+```
+
+<Note>
+  The mock provider maintains the same interface as the real API client, allowing seamless transition without code changes.
+</Note>
+
+## Monitoring and Alerts
+
+Implement logging to track when the mock provider is used:
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+class TennisAPIClient:
+    async def get_player_data(self, player_id: str):
+        try:
+            # Attempt real API call
+            return await self._real_api_call(player_id)
+        except Exception as e:
+            logger.warning(
+                f"Falling back to mock provider. Reason: {e}",
+                extra={"player_id": player_id, "error": str(e)}
+            )
+            return self.mock_api.get_player(player_id)
+```
+
+## Next Steps
+
+- Review [API Setup](/integration/api-setup) to configure the real API client
+- Understand [Data Sources](/integration/data-sources) to know what data the mock provider should simulate
+- Create custom mock data files for your specific testing needs
+- Implement monitoring to track mock vs. real API usage

@@ -1,0 +1,233 @@
+---
+title: Contributing to OddsEngine
+description: Guidelines for contributing to the OddsEngine project
+---
+
+We welcome contributions to OddsEngine! This guide will help you get started with contributing to our tennis analytics platform.
+
+## Getting Started
+
+<Steps>
+  <Step title="Fork the Repository">
+    Fork the [OddsEngine repository](https://github.com/nicosanlucon/OddsEngine) to your GitHub account.
+  </Step>
+  
+  <Step title="Clone Your Fork">
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/OddsEngine.git
+    cd OddsEngine
+    ```
+  </Step>
+  
+  <Step title="Set Up Development Environment">
+    Install the required dependencies:
+    
+    **Requirements:**
+    - Python 3.10+
+    - Docker and Docker Compose
+    - Git
+    
+    ```bash
+    pip install -r requirements.txt
+    ```
+  </Step>
+</Steps>
+
+## Branch Strategy
+
+We follow a structured branching model:
+
+- **`main`**: Production-ready code
+- **`develop`**: Integration branch for features
+- **`feature/*`**: New features (e.g., `feature/probability-calculator`)
+- **`bugfix/*`**: Bug fixes (e.g., `bugfix/api-timeout`)
+- **`hotfix/*`**: Critical production fixes
+
+### Creating a Branch
+
+```bash
+# Create a feature branch from develop
+git checkout develop
+git pull origin develop
+git checkout -b feature/your-feature-name
+
+# For bug fixes
+git checkout -b bugfix/issue-description
+```
+
+## Making Changes
+
+### Code Standards
+
+- Follow PEP 8 style guidelines for Python code
+- Write clear, descriptive variable and function names
+- Add docstrings to all functions and classes
+- Keep functions focused and modular
+- Comment complex logic
+
+### Testing Requirements
+
+Before submitting your contribution:
+
+<AccordionGroup>
+  <Accordion title="Run Local Tests">
+    ```bash
+    pytest tests/
+    ```
+    
+    Ensure all tests pass before committing.
+  </Accordion>
+  
+  <Accordion title="Test Your Changes">
+    - Test your changes locally with Docker:
+    ```bash
+    docker-compose up --build
+    ```
+    - Verify functionality in the UI
+    - Test edge cases and error scenarios
+  </Accordion>
+  
+  <Accordion title="Code Quality">
+    - Run linting checks
+    - Ensure no unnecessary dependencies are added
+    - Check for security vulnerabilities
+  </Accordion>
+</AccordionGroup>
+
+## Commit Guidelines
+
+### Commit Message Format
+
+Use clear, descriptive commit messages:
+
+```
+type(scope): brief description
+
+Detailed explanation if needed
+```
+
+**Types:**
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting)
+- `refactor`: Code refactoring
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks
+
+**Examples:**
+```
+feat(api): add tennis API integration
+fix(calculator): correct probability calculation for combined bets
+docs(readme): update installation instructions
+```
+
+## Pull Request Process
+
+<Steps>
+  <Step title="Push Your Changes">
+    ```bash
+    git add .
+    git commit -m "feat(scope): description of changes"
+    git push origin feature/your-feature-name
+    ```
+  </Step>
+  
+  <Step title="Create Pull Request">
+    1. Go to the OddsEngine repository on GitHub
+    2. Click "New Pull Request"
+    3. Select your branch to merge into `develop`
+    4. Fill out the [PR template](https://github.com/nicosanlucon/OddsEngine/blob/main/.github/PULL_REQUEST_TEMPLATE.md)
+  </Step>
+  
+  <Step title="PR Checklist">
+    Complete the checklist in the PR template:
+    
+    - [ ] Tested changes locally
+    - [ ] Updated documentation if applicable
+    - [ ] All tests pass
+    - [ ] Code follows style guidelines
+    - [ ] Related issue is linked
+  </Step>
+  
+  <Step title="Code Review">
+    - Wait for review from team members
+    - Address feedback and requested changes
+    - Push updates to your branch (PR auto-updates)
+  </Step>
+  
+  <Step title="Merge">
+    Once approved, your PR will be merged by a team member.
+  </Step>
+</Steps>
+
+## Reporting Issues
+
+### Bug Reports
+
+Use our [bug report template](https://github.com/nicosanlucon/OddsEngine/issues/new?template=bug_report.md) to report bugs:
+
+- Provide clear description of the problem
+- Include steps to reproduce
+- Specify expected vs actual results
+- Add screenshots or logs if applicable
+
+### Feature Requests
+
+Use our [feature request template](https://github.com/nicosanlucon/OddsEngine/issues/new?template=feature_request.md):
+
+- Describe the functionality clearly
+- Explain the use case and benefits
+- Include acceptance criteria
+
+## Development Stack
+
+Understanding our technology stack will help you contribute effectively:
+
+<CardGroup cols={2}>
+  <Card title="Frontend" icon="desktop">
+    - PyQt with QtDesigner
+    - Responsive UI design
+  </Card>
+  
+  <Card title="Backend" icon="server">
+    - Python 3.10+
+    - Pandas for data analysis
+    - Tennis API integration
+  </Card>
+  
+  <Card title="Database" icon="database">
+    - Oracle Database
+    - Historical data tracking
+  </Card>
+  
+  <Card title="DevOps" icon="code-branch">
+    - GitHub Actions CI/CD
+    - Docker containerization
+    - SonarQube for quality
+  </Card>
+</CardGroup>
+
+## Getting Help
+
+If you need assistance:
+
+- Check existing [GitHub Issues](https://github.com/nicosanlucon/OddsEngine/issues)
+- Review the [project wiki](https://github.com/nicosanlucon/OddsEngine/wiki)
+- Contact the team:
+  - **Scrum Master**: David Orjuela ([@Kerosene21](https://github.com/Kerosene21))
+  - **Product Owner**: Juan Pablo Álvarez ([@Sleppyhed](https://github.com/Sleppyhed))
+  - **Configuration Manager**: Nicolás Sánchez ([@nicosanlucon](https://github.com/nicosanlucon))
+
+## Code of Conduct
+
+- Be respectful and constructive in discussions
+- Focus on collaboration and learning
+- Follow academic integrity guidelines
+- Respect the SCRUM process and team roles
+
+<Note>
+  This project is developed as part of the **Fundamentos de Ingeniería de Software** course at Pontificia Universidad Javeriana (2026).
+</Note>
+
+Thank you for contributing to OddsEngine!

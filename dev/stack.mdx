@@ -1,0 +1,476 @@
+---
+title: "Technology Stack"
+description: "Deep dive into OddsEngine's technology choices and their rationale"
+icon: "layer-group"
+---
+
+## Stack Overview
+
+OddsEngine is built on a **Python-centric technology stack** optimized for asynchronous data processing, statistical analysis, and rapid development within an academic context.
+
+<Note>
+While the initial proposal included Java as a viable alternative, the team decided to implement the entire backend in Python to maximize consistency, leverage data science libraries, and align with the project's analytical focus.
+</Note>
+
+## Core Technologies
+
+### Python 3.10+
+
+**Role**: Primary programming language for backend, probability engine, and automation
+
+**Why Python 3.10+?**
+
+- **Async/Await Maturity**: Python 3.10+ provides stable asyncio features essential for FastAPI
+- **Type Hints**: Enhanced type checking with `|` union syntax and better IDE support
+- **Pattern Matching**: Structural pattern matching (match/case) for cleaner data processing logic
+- **Data Science Ecosystem**: Native integration with Pandas, NumPy, and analytical libraries
+- **Academic Alignment**: Widely used in university curricula and research projects
+
+```python
+# Python 3.10+ features in use
+from typing import Optional
+
+# Union types with | operator
+def calculate_odds(probability: float | None) -> dict | str:
+    match probability:
+        case float(p) if 0 <= p <= 1:
+            return {"odds": 1/p, "confidence": "high"}
+        case None:
+            return "insufficient_data"
+        case _:
+            return "invalid_probability"
+```
+
+**Version Requirement**: 3.10 minimum ensures access to modern language features while maintaining compatibility with most deployment environments.
+
+---
+
+### PyQt
+
+**Role**: Desktop GUI framework for the presentation layer
+
+**Why PyQt over web frameworks?**
+
+| Criterion | PyQt | Web (React/Vue) |
+|-----------|------|------------------|
+| **Performance** | Native rendering | Browser overhead |
+| **Desktop Integration** | Direct OS access | Limited APIs |
+| **Development Speed** | Qt Designer + Python | Separate frontend/backend |
+| **Learning Curve** | Moderate (Qt concepts) | High (JS ecosystem) |
+| **Deployment** | Single executable | Web server + client |
+| **Academic Fit** | Python-only stack | Requires JS knowledge |
+
+**Key Features Used**:
+- **Qt Designer**: Visual UI layout tool for rapid prototyping
+- **QWidget**: Custom components for probability visualizations
+- **QNetworkAccessManager**: HTTP client for backend communication
+- **QtCharts**: Native charting for match statistics
+
+```python
+# Example: PyQt connecting to FastAPI backend
+from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
+from PyQt5.QtCore import QUrl
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.network_manager = QNetworkAccessManager()
+        self.network_manager.finished.connect(self.on_response)
+        
+    def fetch_match_data(self, match_id: str):
+        url = QUrl(f"http://localhost:8000/api/matches/{match_id}")
+        request = QNetworkRequest(url)
+        self.network_manager.get(request)
+```
+
+<Tip>
+PyQt's **Qt Designer** significantly accelerates UI development. Design forms visually, then generate Python code automatically—no manual widget positioning required.
+</Tip>
+
+---
+
+### FastAPI
+
+**Role**: Backend web framework for RESTful API endpoints
+
+**Why FastAPI over Flask/Django?**
+
+| Feature | FastAPI | Flask | Django |
+|---------|---------|-------|--------|
+| **Async Support** | Native | Limited (3.x) | Via Channels |
+| **Type Validation** | Automatic (Pydantic) | Manual | Manual |
+| **API Docs** | Auto-generated (OpenAPI) | Manual (extensions) | DRF required |
+| **Performance** | Very High (Uvicorn) | Moderate | Moderate |
+| **Learning Curve** | Low (if familiar with Flask) | Very Low | High (ORM, admin) |
+
+**Architectural Benefits**:
+
+1. **Asynchronous by Default**: Handles concurrent API calls to external services without blocking
+2. **Pydantic Integration**: Request/response models automatically validated and documented
+3. **Dependency Injection**: Clean separation of concerns for database sessions, API clients
+4. **Production Ready**: Runs on Uvicorn ASGI server for high-performance deployment
+
+```python
+# src/main/python/main.py
+from fastapi import FastAPI, Depends
+from pydantic import BaseModel
+from typing import List
+
+app = FastAPI(
+    title="OddsEngine API",
+    description="Probabilistic analysis API for tennis betting",
+    version="1.0.0"
+)
+
+class CombinedBetRequest(BaseModel):
+    match_ids: List[str]
+    bet_type: str = "winner"
+
+class ProbabilityResponse(BaseModel):
+    individual_probabilities: List[float]
+    combined_probability: float
+    confidence_score: float
+
+@app.post("/api/bets/analyze", response_model=ProbabilityResponse)
+async def analyze_combined_bet(request: CombinedBetRequest):
+    """Calculate probability for combined bet across multiple matches"""
+    # Async processing allows handling multiple requests concurrently
+    probabilities = await fetch_match_probabilities(request.match_ids)
+    return calculate_combined_odds(probabilities)
+```
+
+**Auto-Generated Documentation**: Access interactive API docs at `http://localhost:8000/docs` (Swagger UI) or `/redoc` (ReDoc).
+
+---
+
+### HTTPX
+
+**Role**: Async HTTP client for external API integration
+
+**Why HTTPX over requests?**
+
+- **Async/Await Support**: Essential for non-blocking I/O in FastAPI
+- **HTTP/2 Support**: Better performance for multiple concurrent requests
+- **Connection Pooling**: Reuses connections to API-Tennis for efficiency
+- **Timeout Handling**: Built-in timeout controls prevent hanging requests
+
+```python
+# src/main/python/services/tennis_api_client.py
+import httpx
+from typing import Optional
+
+class TennisAPIClient:
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        # Reusable client with connection pooling
+        self.client = httpx.AsyncClient(
+            base_url="https://api-tennis.com/v1",
+            timeout=10.0,
+            limits=httpx.Limits(max_keepalive_connections=5)
+        )
+        
+    async def get_player_stats(self, player_id: str) -> dict:
+        """Fetch player statistics with automatic retry on failure"""
+        try:
+            response = await self.client.get(
+                f"/players/{player_id}/stats",
+                headers={"X-API-Key": self.api_key}
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPError as e:
+            # Fallback to mock data provider
+            return await self._get_mock_player_stats(player_id)
+```
+
+<Note>
+The combination of **FastAPI + HTTPX** creates a fully asynchronous pipeline: FastAPI handles incoming requests without blocking, and HTTPX makes external API calls without blocking the event loop. This is critical when fetching data for multiple matches simultaneously.
+</Note>
+
+---
+
+### Pandas
+
+**Role**: Data analysis and probability calculation engine
+
+**Why Pandas?**
+
+- **Tabular Data**: Tennis statistics (player performance, match history) naturally fit DataFrame structures
+- **Statistical Functions**: Built-in mean, median, standard deviation, correlation for probability modeling
+- **Time Series**: Analyze player performance trends over time
+- **Integration**: Works seamlessly with Jupyter notebooks for exploratory analysis
+
+```python
+# src/main/python/engine/probability_calculator.py
+import pandas as pd
+import numpy as np
+
+class ProbabilityEngine:
+    def __init__(self, match_history: pd.DataFrame):
+        self.match_history = match_history
+        
+    def calculate_win_probability(self, player_id: str, opponent_id: str) -> float:
+        """
+        Calculate win probability based on:
+        - Head-to-head record
+        - Recent form (last 10 matches)
+        - Surface performance
+        """
+        # Filter player's recent matches
+        player_matches = self.match_history[
+            self.match_history['player_id'] == player_id
+        ].tail(10)
+        
+        # Calculate win rate
+        win_rate = player_matches['result'].value_counts(normalize=True).get('win', 0)
+        
+        # Adjust for opponent strength
+        opponent_ranking = self._get_player_ranking(opponent_id)
+        adjusted_probability = win_rate * self._ranking_adjustment(opponent_ranking)
+        
+        return float(np.clip(adjusted_probability, 0.1, 0.9))
+```
+
+**Data Pipeline**: Raw API data → Pandas DataFrame → Statistical analysis → Probability scores
+
+---
+
+### Oracle Database
+
+**Role**: Persistent data storage for matches, players, and user data
+
+**Why Oracle over PostgreSQL/MySQL?**
+
+| Criterion | Oracle | PostgreSQL | MySQL |
+|-----------|--------|------------|-------|
+| **Academic Licensing** | Free for universities | Free | Free |
+| **Industry Relevance** | Enterprise standard | Growing adoption | Widespread |
+| **Analytics Features** | Advanced (PL/SQL) | Good | Basic |
+| **Learning Value** | High (resume skill) | High | Moderate |
+| **Transaction Support** | Excellent | Excellent | Good |
+
+**OddsEngine's Oracle Usage**:
+
+```sql
+-- Example: Query for player match history
+SELECT 
+    m.match_id,
+    m.match_date,
+    m.tournament,
+    m.surface,
+    m.result,
+    p.player_name,
+    o.player_name AS opponent_name
+FROM matches m
+JOIN players p ON m.player_id = p.player_id
+JOIN players o ON m.opponent_id = o.player_id
+WHERE m.player_id = :player_id
+ORDER BY m.match_date DESC
+FETCH FIRST 50 ROWS ONLY;
+```
+
+**ORM**: SQLAlchemy with async support for Oracle connections
+
+---
+
+### Docker + Docker Compose
+
+**Role**: Containerization and orchestration for consistent deployment
+
+**Why Docker?**
+
+- **Environment Consistency**: Same behavior in development, testing, and production
+- **Dependency Isolation**: Python packages, Oracle database, and services don't conflict
+- **Easy Onboarding**: New team members run `docker-compose up` and start coding
+- **CI/CD Integration**: GitHub Actions can build and test Docker images automatically
+
+```yaml
+# docker-compose.yml (conceptual structure)
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: oracle://oddsengine:${DB_PASSWORD}@database:1521/xe
+      API_TENNIS_KEY: ${API_TENNIS_KEY}
+    volumes:
+      - ./conf:/app/conf:ro
+    depends_on:
+      - database
+      
+  database:
+    image: container-registry.oracle.com/database/express:21.3.0-xe
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_PWD: ${DB_PASSWORD}
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+
+volumes:
+  oracle_data:
+```
+
+**Dockerfile Structure**:
+```dockerfile
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libaio1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY src/ ./src/
+COPY conf/ ./conf/
+
+# Run FastAPI with Uvicorn
+CMD ["uvicorn", "src.main.python.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+---
+
+## Supporting Technologies
+
+### Uvicorn
+**ASGI server** for running FastAPI in production. Lightning-fast, handles async requests efficiently.
+
+### Pydantic
+**Data validation** library integrated with FastAPI. Automatically validates request/response models using type hints.
+
+### SQLAlchemy
+**ORM (Object-Relational Mapping)** for database interactions. Abstracts SQL queries into Python objects.
+
+### Jupyter Notebooks
+**Exploratory data analysis** tool stored in `jupyter/notebooks/`. Used for:
+- Testing probability algorithms
+- Visualizing player statistics
+- Prototyping new features
+
+---
+
+## DevOps & Quality Tools
+
+### GitHub Actions
+**CI/CD pipeline** for automated testing and deployment. Runs on every commit:
+- Linting (pylint, flake8)
+- Unit tests (pytest)
+- Docker image builds
+- SonarQube analysis
+
+### SonarQube
+**Code quality analysis**. Checks for:
+- Code smells
+- Security vulnerabilities
+- Test coverage gaps
+- Code duplication
+
+### pytest
+**Testing framework** for unit and integration tests. Located in `src/test/python/`.
+
+```python
+# src/test/python/test_probability_engine.py
+import pytest
+from engine.probability_calculator import ProbabilityEngine
+
+@pytest.mark.asyncio
+async def test_combined_probability_calculation():
+    engine = ProbabilityEngine()
+    bets = [
+        {"match_id": "1", "probability": 0.8},
+        {"match_id": "2", "probability": 0.7},
+        {"match_id": "3", "probability": 0.6}
+    ]
+    
+    result = engine.calculate_combined_probability(bets)
+    
+    # 0.8 * 0.7 * 0.6 = 0.336
+    assert abs(result["combined_probability"] - 0.336) < 0.001
+```
+
+---
+
+## Technology Decision Matrix
+
+| Requirement | Technology Choice | Alternative Considered | Decision Reason |
+|-------------|-------------------|------------------------|------------------|
+| **Desktop UI** | PyQt | Electron, Tkinter | Native performance, Qt Designer |
+| **Backend Framework** | FastAPI | Flask, Django | Async support, auto docs |
+| **HTTP Client** | HTTPX | requests, aiohttp | Async, HTTP/2, clean API |
+| **Data Analysis** | Pandas | NumPy only, R | DataFrame abstraction, ecosystem |
+| **Database** | Oracle | PostgreSQL, MongoDB | Academic license, industry skill |
+| **Containerization** | Docker | Virtualenv, Conda | Environment consistency |
+| **API Server** | Uvicorn | Gunicorn, Hypercorn | ASGI native, performance |
+
+---
+
+## External Dependencies
+
+### API-Tennis
+**Tennis statistics provider**. Chosen for:
+- Tennis specialization (ATP/WTA coverage)
+- Clean JSON responses optimized for async processing
+- Free tier (1,000 requests/month)
+- Comprehensive documentation for Python integration
+
+See `docs/research/tennis_api_selection.md` for complete evaluation.
+
+<Tip>
+**Fallback Strategy**: When API-Tennis reaches its rate limit or experiences downtime, the system automatically switches to a **mock data provider** (`mock_data_provider.py`) that returns locally stored sample data, ensuring the application remains functional for development and testing.
+</Tip>
+
+---
+
+## Stack Advantages
+
+### 1. Consistency
+**Python everywhere** reduces context switching. Backend, probability engine, automation scripts, and data analysis all use the same language.
+
+### 2. Async Performance
+**FastAPI + HTTPX + Uvicorn** create a fully non-blocking pipeline that handles concurrent requests efficiently.
+
+### 3. Data Science Ready
+**Pandas + Jupyter** enable rapid experimentation with probability models before productionizing them.
+
+### 4. Academic Alignment
+All technologies are taught in university curricula, maximizing learning outcomes.
+
+### 5. Deployment Simplicity
+**Docker Compose** orchestrates the entire stack with a single command.
+
+---
+
+## Future Considerations
+
+### Potential Migrations
+
+The architecture is designed to allow component replacement:
+
+- **PyQt → Web Frontend**: Replace desktop app with React/Vue while keeping FastAPI backend
+- **Oracle → PostgreSQL**: Switch databases without changing application logic (SQLAlchemy abstracts queries)
+- **API-Tennis → Alternative Provider**: Replace API client implementation while maintaining interface contracts
+
+<Note>
+The initial proposal mentioned Java as an alternative stack. While viable, the team chose Python-first to maximize cohesion and leverage data science libraries. The modular design allows future migration to Java microservices if scaling demands require it.
+</Note>
+
+---
+
+## Related Documentation
+
+- [System Architecture](/dev/architecture) - How these technologies work together
+- [Project Structure](/dev/project-structure) - Where code for each technology lives
+- [Setup Guide](/getting-started/installation) - Installing and configuring the stack
