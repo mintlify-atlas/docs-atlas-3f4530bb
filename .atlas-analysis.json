@@ -1,0 +1,96 @@
+{
+  "projectType": "data-platform",
+  "projectName": "OddsEngine",
+  "projectDescription": "Tennis betting analytics platform that calculates probabilities for individual and combined bets using real-time sports data.",
+  "theme": "sequoia",
+  "primaryColor": "#10b981",
+  "lightColor": "#34d399",
+  "darkColor": "#059669",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/data-model",
+              "concepts/probability-engine",
+              "concepts/tennis-data"
+            ]
+          },
+          {
+            "group": "User Guide",
+            "pages": [
+              "guides/analyzing-bets",
+              "guides/combined-probabilities",
+              "guides/using-interface"
+            ]
+          },
+          {
+            "group": "Data Integration",
+            "pages": [
+              "integration/api-setup",
+              "integration/data-sources",
+              "integration/mock-provider"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Architecture",
+            "pages": [
+              "dev/architecture",
+              "dev/stack",
+              "dev/project-structure"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "dev/contributing",
+              "dev/scrum-workflow",
+              "dev/ci-cd"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "dev/team",
+              "dev/changelog"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Centralized tennis data from API-Tennis.com",
+    "Automated probability calculation for individual and combined bets",
+    "Statistical analysis using Python and Pandas",
+    "PyQt desktop interface for bet analysis",
+    "Oracle Database for data persistence",
+    "Mock data provider for API fallback",
+    "Jupyter notebooks for data exploration"
+  ],
+  "publicApiSurface": [
+    "Tennis API client (HTTPX + FastAPI)",
+    "Probability calculation engine",
+    "Player data models",
+    "Match data models",
+    "Combined bet calculator",
+    "Mock data provider",
+    "Desktop UI (PyQt)"
+  ]
+}
